@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<FileMap>
+  <Field Name="ContractorID" Start="0" Length="10"/>
+  <Field Name="SSN" Start="10" Length="9"/>
+  <Field Name="ClientID" Start="19" Length="10"/>
+  <Field Name="Last" Start="29" Length="35"/>
+  <Field Name="First" Start="64" Length="35"/>
+  <Field Name="Middle" Start="99" Length="14"/>
+  <Field Name="Suffix" Start="113" Length="10"/>
+  <Field Name="DOB" Start="123" Length="8"/>
+  <Field Name="Gender" Start="131" Length="1"/>
+  <Field Name="Race" Start="132" Length="1"/>
+  <Field Name="Ethnic" Start="133" Length="1"/>
+  <Field Name="ProvInfo" Start="134" Length="20"/>
+  <Field Name="ProvId" Start="154" Length="10"/>
+  <Field Name="ContNPI" Start="164" Length="10"/>
+  <Field Name="ProvNPI" Start="174" Length="10"/>
+</FileMap>
