@@ -1,4 +1,5 @@
 ﻿using CommandLine;
+using PAM2FASAMS.DataContext;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,7 @@ namespace PAM2FASAMS
         
         static void Main(string[] args)
         {
+            Init();
             Parser.Default.ParseArguments<Options>(args)
                 .WithParsed<Options>(opts => RunOptionsAndReturnExitCode(opts))
                 .WithNotParsed<Options>((errs) => HandleParseError(errs));
@@ -38,6 +40,14 @@ namespace PAM2FASAMS
         static void HandleParseError(IEnumerable<Error> errors)
         {
 
+        }
+
+        static void Init()
+        {
+            using (var db = new fasams_db())
+            {
+                db.Database.CreateIfNotExists();
+            }
         }
     }
 }

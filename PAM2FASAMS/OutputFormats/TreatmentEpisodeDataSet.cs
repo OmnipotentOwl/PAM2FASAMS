@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,14 +19,24 @@ namespace PAM2FASAMS.OutputFormats
         public List<TreatmentEpisode> TreatmentEpisodes { get; set; }
     }
 
+    [Table(name:"TreatmentEpisodes")]
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class TreatmentEpisode
     {
+        [Key]
+        [Column(Order = 1)]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        [Required]
         public string SourceRecordIdentifier { get; set; }
+        [Key]
+        [Column(Order = 2)]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        [Required]
         public string FederalTaxIdentifier { get; set; }
+        [Required]
         public string ClientSourceRecordIdentifier { get; set; }
         public List<ImmediateDischarge> ImmediateDischarges { get; set; }
         public List<Admission> Admissions { get; set; }
@@ -32,16 +44,20 @@ namespace PAM2FASAMS.OutputFormats
         public string action { get; set; }
     }
 
+    [Table(name: "ImmediateDischarges")]
     public partial class ImmediateDischarge
     {
+        [Key]
         public string SourceRecordIdentifier { get; set; }
         public string EvaluationDate { get; set; }
         public string Note { get; set; }
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string action { get; set; }
     }
+    [Table(name: "Admissions")]
     public partial class Admission
     {
+        [Key]
         public string SourceRecordIdentifier { get; set; }
         public string SiteIdentifier { get; set; }
         public string StaffEducationLevelCode { get; set; }
@@ -65,12 +81,14 @@ namespace PAM2FASAMS.OutputFormats
         public string action { get; set; }
     }
 
+    [Table(name: "PerformanceOutcomeMeasures")]
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class PerformanceOutcomeMeasure
     {
+        [Key]
         public string SourceRecordIdentifier { get; set; }
         public string StaffEducationLevelCode { get; set; }
         public string StaffIdentifier { get; set; }
@@ -90,6 +108,7 @@ namespace PAM2FASAMS.OutputFormats
         public string action { get; set; }
     }
 
+    [Table(name: "Evaluations")]
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
@@ -117,6 +136,7 @@ namespace PAM2FASAMS.OutputFormats
         private string actionField;
 
         /// <remarks/>
+        [Key]
         public string SourceRecordIdentifier { get; set; }
 
         /// <remarks/>
@@ -251,6 +271,7 @@ namespace PAM2FASAMS.OutputFormats
         }
     }
 
+    [Table(name: "Diagnoses")]
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
@@ -274,6 +295,7 @@ namespace PAM2FASAMS.OutputFormats
         private string actionField;
 
         /// <remarks/>
+        [Key]
         public string SourceRecordIdentifier
         {
             get
@@ -416,6 +438,7 @@ namespace PAM2FASAMS.OutputFormats
         private Diagnosis diagnosesField;
 
         /// <remarks/>
+        [Key]
         public string SourceRecordIdentifier
         {
             get
@@ -719,6 +742,7 @@ namespace PAM2FASAMS.OutputFormats
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class SubstanceUseDisorder
     {
+        [Key]
         public string DisorderRankCode { get; set; }
         public string DisorderCode { get; set; }
         public string RouteOfAdministrationCode { get; set; }
