@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<FileMap>
+  <Field Name="ContractorID" Start="0" Length="10"/>
+  <Field Name="SSN" Start="10" Length="9"/>
+  <Field Name="PurpEval" Start="19" Length="1"/>
+  <Field Name="EvalDate" Start="20" Length="8"/>
+  <Field Name="ProvId" Start="28" Length="10"/>
+</FileMap>

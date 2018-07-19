@@ -1,4 +1,5 @@
-﻿using PAM2FASAMS.OutputFormats;
+﻿using PAM2FASAMS.DataContext;
+using PAM2FASAMS.OutputFormats;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,16 @@ namespace PAM2FASAMS.Utilities
                         {
                             return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))).Single();
                         }
+                        else
+                        {
+                            using(var db = new fasams_db())
+                            {
+                                if(db.TreatmentEpisodes.Any(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))))
+                                {
+                                    return db.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))).Single();
+                                }
+                            }
+                        }
                         return null;
                     }
                 case UpdateType.Discharge:
@@ -31,6 +42,16 @@ namespace PAM2FASAMS.Utilities
                         if (currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))))
                         {
                             return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))).Single();
+                        }
+                        else
+                        {
+                            using (var db = new fasams_db())
+                            {
+                                if (db.TreatmentEpisodes.Any(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))))
+                                {
+                                    return db.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))).Single();
+                                }
+                            }
                         }
                         return null;
                     }

@@ -73,6 +73,7 @@
     <Compile Include="DataContext\fasams_db.cs" />
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Utilities\DataTools.cs" />
+    <Compile Include="Utilities\FileMapping.cs" />
     <Compile Include="Validations\FASAMSValidations.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="OutputFormats\ClientDataSet.cs" />
@@ -89,6 +90,13 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="InputFormats\FileMapping.xml" />
+    <Content Include="InputFormats\PAM-PERF-D.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="InputFormats\PAM-SSN.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="InputFormats\PAM-PERF.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
