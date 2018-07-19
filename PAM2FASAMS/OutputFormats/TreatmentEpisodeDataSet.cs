@@ -53,6 +53,15 @@ namespace PAM2FASAMS.OutputFormats
         public string Note { get; set; }
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string action { get; set; }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Episode"), Column(Order = 0)]
+        public string TreatmentSourceId { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Episode"), Column(Order = 2)]
+        public string FederalTaxIdentifier { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public virtual TreatmentEpisode Episode { get; set; }
     }
     [Table(name: "Admissions")]
     public partial class Admission
@@ -79,6 +88,15 @@ namespace PAM2FASAMS.OutputFormats
         public List<Discharge> Discharge { get; set; }
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string action { get; set; }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Episode"), Column(Order = 0)]
+        public string TreatmentSourceId { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Episode"), Column(Order = 2)]
+        public string FederalTaxIdentifier { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public virtual TreatmentEpisode Episode { get; set; }
     }
 
     [Table(name: "PerformanceOutcomeMeasures")]
