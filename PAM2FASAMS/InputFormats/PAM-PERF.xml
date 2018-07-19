@@ -44,7 +44,7 @@
   <Field Name="MhProb" Start="136" Length="1"/>
   <Field Name="FamInc" Start="137" Length="2"/>
   <Field Name="Referral" Start="139" Length="2"/>
-  <Field Name="ProviderId" Start="141" Length="10"/>
+  <Field Name="ProvId" Start="141" Length="10"/>
   <Field Name="MhDiag" Start="151" Length="6"/>
   <Field Name="SaDiag" Start="157" Length="6"/>
   <Field Name="BakerAct" Start="163" Length="1"/>
