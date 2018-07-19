@@ -27,18 +27,6 @@ namespace PAM2FASAMS
             }
             return clientIdentifier;
         }
-        public static void ProcessProviderClientIdentifiers(ProviderClient client, ProviderClientIdentifier identifier)
-        {
-            if(client.ProviderClientIdentifiers.Exists(i=> i.TypeCode == identifier.TypeCode))
-            {
-                var existing = client.ProviderClientIdentifiers.Where(i => i.TypeCode == identifier.TypeCode).Single();
-                existing = identifier;
-            }
-            else
-            {
-                client.ProviderClientIdentifiers.Add(identifier);
-            }
-        }
         public static string ValidateFASAMSDate(string dateRaw)
         {
             DateTime result = DateTime.ParseExact(dateRaw, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);

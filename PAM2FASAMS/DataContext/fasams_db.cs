@@ -1,5 +1,4 @@
 ﻿using PAM2FASAMS.OutputFormats;
-using SQLite.CodeFirst;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -17,7 +16,6 @@ namespace PAM2FASAMS.DataContext
             : base(connectionStringName)
         {
             this.Database.Log = Write;
-            this.Configuration.ProxyCreationEnabled = false;
         }
         
         public void Write(object m)
@@ -27,23 +25,10 @@ namespace PAM2FASAMS.DataContext
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
-            var sqliteConnectionInitializer = new SqliteDropCreateDatabaseWhenModelChanges<fasams_db>(modelBuilder);
-            Database.SetInitializer(sqliteConnectionInitializer);
 
         }
         public virtual DbSet<ProviderClient> ProviderClients { get; set; }
-        public virtual DbSet<ProviderClientIdentifier> ProviderClientIdentifiers { get; set; }
-        public virtual DbSet<ProviderClientPhone> ProviderClientPhones { get; set; }
-        public virtual DbSet<ProviderClientEmailAddress> ProviderClientEmailAddresses { get; set; }
-        public virtual DbSet<ProviderClientPhysicalAddress> ProviderClientPhysicalAddresses { get; set; }
         public virtual DbSet<TreatmentEpisode> TreatmentEpisodes { get; set; }
-        public virtual DbSet<Admission> Admissions { get; set; }
-        public virtual DbSet<ImmediateDischarge> ImmediateDischarges { get; set; }
-        public virtual DbSet<PerformanceOutcomeMeasure> PerformanceOutcomeMeasures { get; set; }
-        public virtual DbSet<SubstanceUseDisorder> SubstanceUseDisorders { get; set; }
-        public virtual DbSet<Evaluation> Evaluations { get; set; }
-        public virtual DbSet<Diagnosis> Diagnoses { get; set; }
-        public virtual DbSet<Discharge> Discharges { get; set; }
 
     }
 }
