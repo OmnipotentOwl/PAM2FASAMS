@@ -46,6 +46,7 @@ namespace PAM2FASAMS
                         case "IDUP":
                             break;
                         case "SSN":
+                            PAMConvert.InvokeSSNConversion(options.InputFile, options.OutputFile);
                             break;
                         case "DEMO":
                             PAMConvert.InvokeDemoConversion(options.InputFile, options.OutputFile);
@@ -71,6 +72,8 @@ namespace PAM2FASAMS
                             break;
                         case "SANDR":
                             break;
+                        default:
+                            break;
                     }
                 }
                 Console.WriteLine("Batch execution completed!");
@@ -79,6 +82,11 @@ namespace PAM2FASAMS
             {
                 switch (options.Type)
                 {
+                    case FileType.IDUP:
+                        break;
+                    case FileType.SSN:
+                        PAMConvert.InvokeSSNConversion(options.InputFile, options.OutputFile);
+                        break;
                     case FileType.DEMO:
                         PAMConvert.InvokeDemoConversion(options.InputFile, options.OutputFile);
                         break;
