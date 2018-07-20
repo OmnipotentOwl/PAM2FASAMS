@@ -27,7 +27,7 @@ namespace PAM2FASAMS.Utilities
 
                             if (existing == null)
                             {
-                                existing = new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString() };
+                                existing = new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), Admissions = new List<Admission>() };
                             }
 
                             return existing;
@@ -37,7 +37,7 @@ namespace PAM2FASAMS.Utilities
                     {
                         if (currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))))
                         {
-                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))).Single();
+                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))).SingleOrDefault();
                         }
                         else
                         {
@@ -51,7 +51,6 @@ namespace PAM2FASAMS.Utilities
                                 return existing;
                             }
                         }
-                        return null;
                     }
                 case UpdateType.Discharge:
                     {
@@ -79,6 +78,56 @@ namespace PAM2FASAMS.Utilities
                     return null;
             }
             
+        }
+        public static Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, UpdateType type, string recordDate)
+        {
+            switch (type)
+            {
+                case UpdateType.Admission:
+                    {
+                        using(var db = new fasams_db())
+                        {
+                            Admission existing = db.Admissions
+                                .Include(x => x.PerformanceOutcomeMeasures.Select(p => p.SubstanceUseDisorders))
+                                .Include(x => x.Evaluations)
+                                .Include(x => x.Diagnoses)
+                                .SingleOrDefault(a => a.TreatmentSourceId == episode.SourceRecordIdentifier);
+
+                            if(existing == null)
+                            {
+                                existing = new Admission { SourceRecordIdentifier = Guid.NewGuid().ToString() };
+                            }
+
+                            return existing;
+                        }
+                    }
+                case UpdateType.Update:
+                    {
+                        if (episode.Admissions.Exists(a => a.TreatmentSourceId == episode.SourceRecordIdentifier && a.PerformanceOutcomeMeasures!=null))
+                        {
+                            return episode.Admissions.Where(a => a.TreatmentSourceId == episode.SourceRecordIdentifier).SingleOrDefault();
+                        }
+                        else
+                        {
+                            using (var db = new fasams_db())
+                            {
+                                Admission existing = db.Admissions
+                                    .Include(x => x.PerformanceOutcomeMeasures.Select(p => p.SubstanceUseDisorders))
+                                    .Include(x => x.Evaluations)
+                                    .Include(x => x.Diagnoses)
+                                    .SingleOrDefault(a => a.TreatmentSourceId == episode.SourceRecordIdentifier);
+
+                                return existing;
+                            }
+                        }
+                    }
+                case UpdateType.Discharge:
+                    {
+                        return null;
+                    }
+                default:
+                    return null;
+            }
         }
         public static ProviderClient OpportuniticlyLoadProviderClient(ProviderClients currentJob, ProviderClientIdentifier SSN, string FederalTaxIdentifier)
         {

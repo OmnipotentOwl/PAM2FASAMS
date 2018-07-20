@@ -75,6 +75,7 @@
   <ItemGroup>
     <Compile Include="DataContext\fasams_db.cs" />
     <Compile Include="Migrations\Configuration.cs" />
+    <Compile Include="OutputFormats\ServiceEventDataSet.cs" />
     <Compile Include="Utilities\DataTools.cs" />
     <Compile Include="Utilities\FileMapping.cs" />
     <Compile Include="Validations\FASAMSValidations.cs" />
