@@ -18,7 +18,20 @@ namespace PAM2FASAMS.Utilities
             {
                 case UpdateType.Admission:
                     {
-                        return null;
+                        using (var db = new fasams_db())
+                        {
+                            TreatmentEpisode existing = db.TreatmentEpisodes
+                                .Include(x => x.Admissions)
+                                .Include(x => x.ImmediateDischarges)
+                                .SingleOrDefault(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier);
+
+                            if (existing == null)
+                            {
+                                existing = new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString() };
+                            }
+
+                            return existing;
+                        }
                     }
                 case UpdateType.Update:
                     {
@@ -30,10 +43,12 @@ namespace PAM2FASAMS.Utilities
                         {
                             using(var db = new fasams_db())
                             {
-                                if(db.TreatmentEpisodes.Any(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Any(a => a.AdmissionDate == recordDate && a.Discharge == null))))
-                                {
-                                    return db.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Any(a => a.AdmissionDate == recordDate && a.Discharge == null))).Single();
-                                }
+                                TreatmentEpisode existing = db.TreatmentEpisodes
+                                    .Include(x => x.Admissions)
+                                    .Include(x => x.ImmediateDischarges)
+                                    .SingleOrDefault(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier);
+
+                                return existing;
                             }
                         }
                         return null;

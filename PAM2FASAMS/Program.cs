@@ -67,8 +67,10 @@ namespace PAM2FASAMS
                         case "ASAM":
                             break;
                         case "SERV":
+                            PAMConvert.InvokeServConversion(options.InputFile, options.OutputFile);
                             break;
                         case "EVNT":
+                            PAMConvert.InvokeEvntConversion(options.InputFile, options.OutputFile);
                             break;
                         case "SANDR":
                             break;
@@ -92,6 +94,12 @@ namespace PAM2FASAMS
                         break;
                     case FileType.PERF:
                         PAMConvert.InvokePerfConversion(options.InputFile, options.OutputFile);
+                        break;
+                    case FileType.SERV:
+                        PAMConvert.InvokeServConversion(options.InputFile, options.OutputFile);
+                        break;
+                    case FileType.EVNT:
+                        PAMConvert.InvokeEvntConversion(options.InputFile, options.OutputFile);
                         break;
                     default:
                         break;

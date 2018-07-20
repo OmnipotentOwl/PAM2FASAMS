@@ -30,6 +30,7 @@ namespace PAM2FASAMS.OutputFormats
         [Column(Order = 1)]
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
         [Required]
+        [MaxLength(100)]
         public string SourceRecordIdentifier { get; set; }
         [Key]
         [Column(Order = 2)]
@@ -48,7 +49,14 @@ namespace PAM2FASAMS.OutputFormats
     public partial class ImmediateDischarge
     {
         [Key]
+        [MaxLength(100)]
         public string SourceRecordIdentifier { get; set; }
+        [Required]
+        public string StaffEducationLevelCode { get; set; }
+        [Required]
+        [MaxLength(100)]
+        public string StaffIdentifier { get; set; }
+        [Required]
         public string EvaluationDate { get; set; }
         public string Note { get; set; }
         [System.Xml.Serialization.XmlAttributeAttribute()]
@@ -67,9 +75,11 @@ namespace PAM2FASAMS.OutputFormats
     public partial class Admission
     {
         [Key]
+        [MaxLength(100)]
         public string SourceRecordIdentifier { get; set; }
         public string SiteIdentifier { get; set; }
         public string StaffEducationLevelCode { get; set; }
+        [MaxLength(100)]
         public string StaffIdentifier { get; set; }
         public string SubcontractNumber { get; set; }
         public string ContractNumber { get; set; }
@@ -107,9 +117,14 @@ namespace PAM2FASAMS.OutputFormats
     public partial class PerformanceOutcomeMeasure
     {
         [Key]
+        [MaxLength(100)]
         public string SourceRecordIdentifier { get; set; }
+        [Required]
         public string StaffEducationLevelCode { get; set; }
+        [Required]
+        [MaxLength(100)]
         public string StaffIdentifier { get; set; }
+        [Required]
         public string PerformanceOutcomeMeasureDate { get; set; }
         public ClientDemographic ClientDemographic { get; set; }
         public FinancialAndHousehold FinancialAndHousehold { get; set; }
@@ -155,9 +170,11 @@ namespace PAM2FASAMS.OutputFormats
 
         /// <remarks/>
         [Key]
+        [MaxLength(100)]
         public string SourceRecordIdentifier { get; set; }
 
         /// <remarks/>
+        [Required]
         public string StaffEducationLevelCode
         {
             get
@@ -171,6 +188,8 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
+        [MaxLength(100)]
         public string StaffIdentifier
         {
             get
@@ -184,6 +203,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
         public string TypeCode
         {
             get
@@ -197,6 +217,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
         public string ToolCode
         {
             get
@@ -210,6 +231,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
         public string EvaluationDate
         {
             get
@@ -314,6 +336,7 @@ namespace PAM2FASAMS.OutputFormats
 
         /// <remarks/>
         [Key]
+        [MaxLength(100)]
         public string SourceRecordIdentifier
         {
             get
@@ -327,6 +350,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
         public string StaffEducationLevelCode
         {
             get
@@ -340,6 +364,8 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
+        [MaxLength(100)]
         public string StaffIdentifier
         {
             get
@@ -353,6 +379,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
         public string CodeSetIdentifierCode
         {
             get
@@ -366,6 +393,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
         public string DiagnosisCode
         {
             get
@@ -379,6 +407,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
         public string StartDate
         {
             get
@@ -453,10 +482,11 @@ namespace PAM2FASAMS.OutputFormats
 
         private List<Evaluation> evaluationsField;
 
-        private Diagnosis diagnosesField;
+        private List<Diagnosis> diagnosesField;
 
         /// <remarks/>
         [Key]
+        [MaxLength(100)]
         public string SourceRecordIdentifier
         {
             get
@@ -483,6 +513,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [MaxLength(100)]
         public string StaffIdentifier
         {
             get
@@ -496,6 +527,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
         public string TypeCode
         {
             get
@@ -509,6 +541,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
         public string DischargeDate
         {
             get
@@ -522,6 +555,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
         public string LastContactDate
         {
             get
@@ -535,6 +569,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
+        [Required]
         public string DischargeReasonCode
         {
             get
@@ -640,7 +675,7 @@ namespace PAM2FASAMS.OutputFormats
         }
 
         /// <remarks/>
-        public Diagnosis Diagnoses
+        public List<Diagnosis> Diagnoses
         {
             get
             {
@@ -651,6 +686,12 @@ namespace PAM2FASAMS.OutputFormats
                 this.diagnosesField = value;
             }
         }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Admission"), Column(Order = 0)]
+        public string AdmitSourceId { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public virtual Admission Admission { get; set; }
     }
 
     [System.SerializableAttribute()]
@@ -760,12 +801,18 @@ namespace PAM2FASAMS.OutputFormats
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class SubstanceUseDisorder
     {
-        [Key]
+        [Key, Column(Order = 1)]
         public string DisorderRankCode { get; set; }
         public string DisorderCode { get; set; }
         public string RouteOfAdministrationCode { get; set; }
         public string FrequencyofUseCode { get; set; }
         public string FirstUseAge { get; set; }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [Key,ForeignKey("Perf"), Column(Order = 0)]
+        public string PerfSourceId { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public virtual PerformanceOutcomeMeasure Perf { get; set; }
     }
 
     [System.SerializableAttribute()]

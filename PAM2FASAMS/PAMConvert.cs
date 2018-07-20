@@ -3,6 +3,7 @@ using PAM2FASAMS.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Entity.Validation;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -16,105 +17,29 @@ namespace PAM2FASAMS
 {
     public class PAMConvert
     {
-        private static string PAMMappingFile;
-        private static List<Field> GetFields(string mappingFile)
-        {
-            List<Field> fields = new List<Field>();
-            XmlDocument map = new XmlDocument();
-            //Load the mapping file into the XmlDocument
-            map.Load(mappingFile);
-            //Load the field nodes.
-            XmlNodeList fieldNodes = map.SelectNodes("/FileMap/Field");
-            //Loop through the nodes and create a field object
-            // for each one.
-            foreach (XmlNode fieldNode in fieldNodes)
-            {
-                Field field = new Field
-                {
-
-                    //Set the field's name
-                    Name = fieldNode.Attributes["Name"].Value,
-
-                    //Set the field's length
-                    Length =
-                     Convert.ToInt32(fieldNode.Attributes["Length"].Value),
-
-                    //Set the field's starting position
-                    Start =
-                      Convert.ToInt32(fieldNode.Attributes["Start"].Value)
-                };
-
-                //Add the field to the Field list.
-                fields.Add(field);
-            }
-
-            return fields;
-        }
-        private static List<List<Field>> ParseFile(string inputFile, string mappingFile)
-        {
-            //Get the field mapping.
-            List<Field> fields = GetFields(mappingFile);
-            //Create a List<List<Field>> collection of collections.
-            // The main collection contains our records, and the
-            // sub collection contains the fields each one of our
-            // records contains.
-            List<List<Field>> records = new List<List<Field>>();
-            //Open the flat file using a StreamReader.
-            using (StreamReader reader = new StreamReader(inputFile))
-            {
-                //Load the first line of the file.
-                string line = reader.ReadLine();
-
-                //Loop through the file until there are no lines
-                // left.
-                while (line != null)
-                {
-                    //Create out record (field collection)
-                    List<Field> record = new List<Field>();
-
-                    //Loop through the mapped fields
-                    foreach (Field field in fields)
-                    {
-                        Field fileField = new Field();
-
-                        //Use the mapped field's start and length
-                        // properties to determine where in the
-                        // line to pull our data from.
-                        try
-                        {
-                            fileField.Value =
-                            line.Substring(field.Start, field.Length);
-                        }
-                        catch { }
-
-                        //Set the name of the field.
-                        fileField.Name = field.Name;
-                        fileField.Start = field.Start;
-                        fileField.Length = field.Length;
-                        //Add the field to our record.
-                        record.Add(fileField);
-                    }
-
-                    //Add the record to our record collection
-                    records.Add(record);
-
-                    //Read the next line.
-                    line = reader.ReadLine();
-                }
-            }
-
-            //Return all of our records.
-            return records;
-        }
+        #region Conversion Functions
         public static void InvokeSSNConversion(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SSN update file..");
             PAMMappingFile = @"InputFormats/PAM-SSN.xml";
             var pamFile = ParseFile(inputFile, PAMMappingFile);
+            ProviderClients clientDataSet = new ProviderClients { clients = new List<ProviderClient>() };
             foreach (var pamRow in pamFile)
             {
-
+                ProviderClient client = new ProviderClient
+                {
+                    ProviderClientIdentifiers = new List<ProviderClientIdentifier>()
+                };
+                var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
+                var clientId = FASAMSValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "OldSSN").Single().Value));
+                var newClientId = FASAMSValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "NewSSN").Single().Value));
+                client = DataTools.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                FASAMSValidations.ProcessProviderClientIdentifiers(client, newClientId);
+                clientDataSet.clients.Add(client);
+                DataTools.UpsertProviderClient(client);
             }
+            WriteXml(clientDataSet, outputFile, "ClientDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Conversion of PAM SSN update file.");
         }
         public static void InvokeDemoConversion(string inputFile, string outputFile)
         {
@@ -196,12 +121,14 @@ namespace PAM2FASAMS
                 else
                 {
                     var type = PAMValidations.ValidateEvalPurpose(FileType.PERF, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
+                    string evalDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value));
                     switch (type)
                     {
                         case PAMValidations.UpdateType.Admission:
                             {
-                                TreatmentEpisode treatmentEpisode = new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), FederalTaxIdentifier = fedTaxId };
+                                TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier);
                                 treatmentEpisode.Admissions = new List<Admission>();
+                                treatmentEpisode.FederalTaxIdentifier = fedTaxId;
                                 treatmentEpisode.ClientSourceRecordIdentifier = client.SourceRecordIdentifier;
                                 Admission admission = new Admission
                                 {
@@ -359,16 +286,20 @@ namespace PAM2FASAMS
                                     });
                                 }
                                 treatmentEpisode.Admissions.Add(admission);
-                                treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                try
+                                {
+                                    DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                    treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                }
+                                catch (DbEntityValidationException ex)
+                                {
+                                    var error = ex.EntityValidationErrors.First().ValidationErrors.First();
+                                }
                                 break;
                             }
                         case PAMValidations.UpdateType.Update:
                             {
-                                break;
-                                string evalDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value));
-                                string clientSourceRecordIdentifier = client.SourceRecordIdentifier;
-                                TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, clientSourceRecordIdentifier);
+                                TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier);
                                 Admission admission = treatmentEpisode.Admissions.Where(a => a.AdmissionDate == FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value)) && a.Discharge == null).Single();
                                 PerformanceOutcomeMeasure performanceOutcomeMeasure = new PerformanceOutcomeMeasure
                                 {
@@ -460,7 +391,14 @@ namespace PAM2FASAMS
                                     }
                                 };
                                 admission.PerformanceOutcomeMeasures.Add(performanceOutcomeMeasure);
-                                DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                try
+                                {
+                                    DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                }
+                                catch (DbEntityValidationException ex)
+                                {
+                                    var error = ex.EntityValidationErrors.First().ValidationErrors.First();
+                                }
                                 break;
                             }
                         case PAMValidations.UpdateType.Discharge:
@@ -479,7 +417,106 @@ namespace PAM2FASAMS
             WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM PERF file.");
         }
+        public static void InvokeServConversion(string inputFile, string outputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM SERV file..");
+        }
+        public static void InvokeEvntConversion(string inputFile, string outputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM EVNT file..");
+        }
+        #endregion
+        #region internal functions
+        private static string PAMMappingFile;
+        private static List<Field> GetFields(string mappingFile)
+        {
+            List<Field> fields = new List<Field>();
+            XmlDocument map = new XmlDocument();
+            //Load the mapping file into the XmlDocument
+            map.Load(mappingFile);
+            //Load the field nodes.
+            XmlNodeList fieldNodes = map.SelectNodes("/FileMap/Field");
+            //Loop through the nodes and create a field object
+            // for each one.
+            foreach (XmlNode fieldNode in fieldNodes)
+            {
+                Field field = new Field
+                {
 
+                    //Set the field's name
+                    Name = fieldNode.Attributes["Name"].Value,
+
+                    //Set the field's length
+                    Length =
+                     Convert.ToInt32(fieldNode.Attributes["Length"].Value),
+
+                    //Set the field's starting position
+                    Start =
+                      Convert.ToInt32(fieldNode.Attributes["Start"].Value)
+                };
+
+                //Add the field to the Field list.
+                fields.Add(field);
+            }
+
+            return fields;
+        }
+        private static List<List<Field>> ParseFile(string inputFile, string mappingFile)
+        {
+            //Get the field mapping.
+            List<Field> fields = GetFields(mappingFile);
+            //Create a List<List<Field>> collection of collections.
+            // The main collection contains our records, and the
+            // sub collection contains the fields each one of our
+            // records contains.
+            List<List<Field>> records = new List<List<Field>>();
+            //Open the flat file using a StreamReader.
+            using (StreamReader reader = new StreamReader(inputFile))
+            {
+                //Load the first line of the file.
+                string line = reader.ReadLine();
+
+                //Loop through the file until there are no lines
+                // left.
+                while (line != null)
+                {
+                    //Create out record (field collection)
+                    List<Field> record = new List<Field>();
+
+                    //Loop through the mapped fields
+                    foreach (Field field in fields)
+                    {
+                        Field fileField = new Field();
+
+                        //Use the mapped field's start and length
+                        // properties to determine where in the
+                        // line to pull our data from.
+                        try
+                        {
+                            fileField.Value =
+                            line.Substring(field.Start, field.Length);
+                        }
+                        catch { }
+
+                        //Set the name of the field.
+                        fileField.Name = field.Name;
+                        fileField.Start = field.Start;
+                        fileField.Length = field.Length;
+                        //Add the field to our record.
+                        record.Add(fileField);
+                    }
+
+                    //Add the record to our record collection
+                    records.Add(record);
+
+                    //Read the next line.
+                    line = reader.ReadLine();
+                }
+            }
+
+            //Return all of our records.
+            return records;
+        }
         private static void WriteXml(object dataStructure, string outputFile, string outputFileName, string outputPath)
         {
             if (outputFile == null)
@@ -493,6 +530,7 @@ namespace PAM2FASAMS
             writer.Serialize(file, dataStructure);
             file.Close();
         }
+        #endregion
     }
 
     internal class Field
