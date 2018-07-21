@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<FileMap>
+  <Field Name="ContractorID" Start="0" Length="10"/>
+  <Field Name="SiteId" Start="10" Length="2"/>
+  <Field Name="SSN" Start="12" Length="9"/>
+  <Field Name="ClientId" Start="21" Length="10"/>
+  <Field Name="ProvType" Start="31" Length="2"/>
+  <Field Name="CntyServ" Start="33" Length="2"/>
+  <Field Name="CovrdSvcs" Start="35" Length="2"/>
+  <Field Name="Fund" Start="37" Length="1"/>
+  <Field Name="ProgType" Start="38" Length="1"/>
+  <Field Name="ProcCode" Start="39" Length="5"/>
+  <Field Name="ServDate" Start="44" Length="8"/>
+  <Field Name="Unit" Start="52" Length="4"/>
+  <Field Name="Setting" Start="56" Length="2"/>
+  <Field Name="BeginTime" Start="58" Length="5"/>
+  <Field Name="HeathPlan" Start="62" Length="5"/>
+  <Field Name="ClaimId" Start="67" Length="5"/>
+  <Field Name="StdCharge" Start="72" Length="3"/>
+  <Field Name="RecPaid" Start="75" Length="3"/>
+  <Field Name="Payment" Start="78" Length="3"/>
+  <Field Name="ContNum1" Start="81" Length="5"/>
+  <Field Name="StaffId" Start="86" Length="12"/>
+  <Field Name="Modifier1" Start="98" Length="2"/>
+  <Field Name="Blank" Start="100" Length="1"/>
+  <Field Name="Modifier2" Start="101" Length="2"/>
+  <Field Name="Blank2" Start="103" Length="1"/>
+  <Field Name="Modifier3" Start="104" Length="2"/>
+  <Field Name="Blank3" Start="106" Length="1"/>
+  <Field Name="Modifier4" Start="107" Length="2"/>
+  <Field Name="Blank4" Start="109" Length="3"/>
+  <Field Name="ProvInfo" Start="112" Length="20"/>
+  <Field Name="Fund2" Start="132" Length="1"/>
+  <Field Name="ContNum2" Start="133" Length="5"/>
+  <Field Name="ProvId" Start="138" Length="10"/>
+  <Field Name="ServBilled" Start="148" Length="8"/>
+  <Field Name="ServPaid" Start="156" Length="8"/>
+  <Field Name="TxBegin" Start="164" Length="2"/>
+  <Field Name="TxEnd" Start="166" Length="2"/>
+</FileMap>

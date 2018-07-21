@@ -91,6 +91,7 @@ namespace PAM2FASAMS.Utilities
                                 .Include(x => x.PerformanceOutcomeMeasures.Select(p => p.SubstanceUseDisorders))
                                 .Include(x => x.Evaluations)
                                 .Include(x => x.Diagnoses)
+                                .Include(x => x.Discharge)
                                 .SingleOrDefault(a => a.TreatmentSourceId == episode.SourceRecordIdentifier);
 
                             if(existing == null)
@@ -115,6 +116,7 @@ namespace PAM2FASAMS.Utilities
                                     .Include(x => x.PerformanceOutcomeMeasures.Select(p => p.SubstanceUseDisorders))
                                     .Include(x => x.Evaluations)
                                     .Include(x => x.Diagnoses)
+                                    .Include(x => x.Discharge)
                                     .SingleOrDefault(a => a.TreatmentSourceId == episode.SourceRecordIdentifier);
 
                                 return existing;

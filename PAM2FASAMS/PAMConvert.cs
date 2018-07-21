@@ -51,7 +51,7 @@ namespace PAM2FASAMS
         public static void InvokeDemoConversion(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM DEMO file..");
-            bool IsDelete = string.Equals(Path.GetExtension(inputFile), "del", StringComparison.OrdinalIgnoreCase);
+            bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
             if (IsDelete)
             {
                 PAMMappingFile = @"InputFormats/PAM-DEMO-D.xml";
@@ -127,7 +127,7 @@ namespace PAM2FASAMS
         public static void InvokePerfConversion(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM PERF file..");
-            bool IsDelete = string.Equals(Path.GetExtension(inputFile), "del", StringComparison.OrdinalIgnoreCase);
+            bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
             if (IsDelete)
             {
                 PAMMappingFile = @"InputFormats/PAM-PERF-D.xml";
@@ -485,14 +485,152 @@ namespace PAM2FASAMS
             WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM PERF file.");
         }
-
         public static void InvokeServConversion(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SERV file..");
+            bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
+            if (IsDelete)
+            {
+                PAMMappingFile = @"InputFormats/PAM-SERV-D.xml";
+                return;
+            }
+            else
+            {
+                PAMMappingFile = @"InputFormats/PAM-SERV.xml";
+            }
+            var pamFile = ParseFile(inputFile, PAMMappingFile);
+            int rowNum = 1;
+            ServiceEvents serviceEventsDataSet = new ServiceEvents { serviceEvents = new List<ServiceEvent>() };
+            foreach (var pamRow in pamFile)
+            {
+                try
+                {
+                    ProviderClient client = new ProviderClient
+                    {
+                        ProviderClientIdentifiers = new List<ProviderClientIdentifier>()
+                    };
+                    ServiceEvent service = new ServiceEvent {
+                        CoveredServiceModifiers = new List<CoveredServiceModifier>(),
+                        ExpenditureModifiers = new List<ExpenditureModifier>()
+                    };
+                    var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
+                    var clientId = FASAMSValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
+                    client = DataTools.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    if (IsDelete)
+                    {
+
+                    }
+                    else
+                    {
+                        service.SourceRecordIdentifier = Guid.NewGuid().ToString();
+                        service.TypeCode = "1";
+                        service.FederalTaxIdentifier = fedTaxId;
+                        service.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
+                        service.EpisodeSourceRecordIdentifier = ""; //todo
+                        service.AdmissionSourceRecordIdentifier = ""; //todo
+                        service.ProgramAreaCode = (pamRow.Where(r => r.Name == "ProgType").Single().Value);
+                        service.TreatmentSettingCode = (pamRow.Where(r => r.Name == "Setting").Single().Value);
+                        service.CoveredServiceCode = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
+                        service.HcpcsProcedureCode = (pamRow.Where(r => r.Name == "ProcCode").Single().Value);
+                        service.ServiceDate = (pamRow.Where(r => r.Name == "ServDate").Single().Value);
+                        service.StartTime = (pamRow.Where(r => r.Name == "BeginTime").Single().Value);
+                        service.ServiceUnitCount = uint.Parse(pamRow.Where(r => r.Name == "Unit").Single().Value);
+                        service.FundCode = (pamRow.Where(r => r.Name == "Fund").Single().Value);
+                        service.ActualPaymentRateAmount = 0; //todo
+                        service.ServiceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyServ").Single().Value);
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier1").Single().Value))
+                        {
+                            CoveredServiceModifier modifier = new CoveredServiceModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier1").Single().Value.Trim()
+                            };
+                            service.CoveredServiceModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier2").Single().Value))
+                        {
+                            CoveredServiceModifier modifier = new CoveredServiceModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier2").Single().Value.Trim()
+                            };
+                            service.CoveredServiceModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier3").Single().Value))
+                        {
+                            CoveredServiceModifier modifier = new CoveredServiceModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier3").Single().Value.Trim()
+                            };
+                            service.CoveredServiceModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier4").Single().Value))
+                        {
+                            ExpenditureModifier modifier = new ExpenditureModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier4").Single().Value.Trim()
+                            };
+                            service.ExpenditureModifiers.Add(modifier);
+                        }
+                    }
+                    try
+                    {
+                        //DataTools.UpsertProviderClient(client);
+                        serviceEventsDataSet.serviceEvents.Add(service);
+                    }
+                    catch (DbEntityValidationException ex)
+                    {
+                        // Retrieve the error messages as a list of strings.
+                        var errorMessages = ex.EntityValidationErrors
+                                .SelectMany(x => x.ValidationErrors)
+                                .Select(x => x.ErrorMessage);
+
+                        // Join the list to a single string.
+                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                        // Combine the original exception message with the new one.
+                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                        // Throw a new DbEntityValidationException with the improved exception message.
+                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    WriteErrorLog(ex, "ServiceEventDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                }
+                rowNum++;
+            }
+            WriteXml(serviceEventsDataSet, outputFile, "ServiceEventDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Conversion of PAM SERV file.");
         }
         public static void InvokeEvntConversion(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM EVNT file..");
+            bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
+            if (IsDelete)
+            {
+                PAMMappingFile = @"InputFormats/PAM-EVNT-D.xml";
+            }
+            else
+            {
+                PAMMappingFile = @"InputFormats/PAM-EVNT.xml";
+            }
+            var pamFile = ParseFile(inputFile, PAMMappingFile);
+            int rowNum = 1;
+            ServiceEvents serviceEventsDataSet = new ServiceEvents { serviceEvents = new List<ServiceEvent>() };
+            foreach (var pamRow in pamFile)
+            {
+                try
+                {
+
+                }
+                catch (Exception ex)
+                {
+                    WriteErrorLog(ex, "ServiceEventDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                }
+                rowNum++;
+            }
+            WriteXml(serviceEventsDataSet, outputFile, "ServiceEventDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Conversion of PAM EVNT file.");
         }
         #endregion
         #region internal functions

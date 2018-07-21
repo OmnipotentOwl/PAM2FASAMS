@@ -19,6 +19,7 @@ namespace PAM2FASAMS.OutputFormats
     [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
     public partial class ServiceEvents
     {
+        [System.Xml.Serialization.XmlElementAttribute("ServiceEvent")]
         public List<ServiceEvent> serviceEvents { get; set; }
     }
 
