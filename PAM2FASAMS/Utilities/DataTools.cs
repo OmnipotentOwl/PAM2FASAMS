@@ -12,63 +12,36 @@ namespace PAM2FASAMS.Utilities
 {
     public class DataTools
     {
-        public static TreatmentEpisode OpportuniticlyLoadTreatmentSession(TreatmentEpisodeDataSet currentJob, UpdateType type, string recordDate, string clientSourceRecordIdentifier)
+        public static TreatmentEpisode OpportuniticlyLoadTreatmentSession(TreatmentEpisodeDataSet currentJob, UpdateType type, string recordDate, string clientSourceRecordIdentifier, string federalTaxIdentifier)
         {
+            DateTime date = DateTime.Parse(recordDate);
             switch (type)
             {
                 case UpdateType.Admission:
                     {
-                        using (var db = new fasams_db())
-                        {
-                            TreatmentEpisode existing = db.TreatmentEpisodes
-                                .Include(x => x.Admissions.Select(a => a.Discharge))
-                                .Include(x => x.ImmediateDischarges)
-                                .SingleOrDefault(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier);
-
-                            if (existing == null)
-                            {
-                                existing = new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), Admissions = new List<Admission>() };
-                            }
-
-                            return existing;
-                        }
+                        return OpportuniticlyLoadTreatmentSession(recordDate, clientSourceRecordIdentifier, federalTaxIdentifier);
                     }
                 case UpdateType.Update:
                     {
-                        if (currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))))
+                        if (currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && a.Discharge == null))))
                         {
-                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))).SingleOrDefault();
+                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && a.Discharge == null))).SingleOrDefault();
                         }
                         else
                         {
-                            using(var db = new fasams_db())
-                            {
-                                TreatmentEpisode existing = db.TreatmentEpisodes
-                                    .Include(x => x.Admissions)
-                                    .Include(x => x.ImmediateDischarges)
-                                    .SingleOrDefault(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier);
-
-                                return existing;
-                            }
+                            return OpportuniticlyLoadTreatmentSession(recordDate, clientSourceRecordIdentifier, federalTaxIdentifier);
                         }
                     }
                 case UpdateType.Discharge:
                     {
-                        if (currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))))
+                        if (currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && a.Discharge == null))))
                         {
-                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))).Single();
+                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && a.Discharge == null))).Single();
                         }
                         else
                         {
-                            using (var db = new fasams_db())
-                            {
-                                if (db.TreatmentEpisodes.Any(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))))
-                                {
-                                    return db.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.AdmissionDate == recordDate && a.Discharge == null))).Single();
-                                }
-                            }
+                            return OpportuniticlyLoadTreatmentSession(recordDate, clientSourceRecordIdentifier, federalTaxIdentifier);
                         }
-                        return null;
                     }
                 case UpdateType.ImDischarge:
                     {
@@ -79,7 +52,7 @@ namespace PAM2FASAMS.Utilities
             }
             
         }
-        public static TreatmentEpisode OpportuniticlyLoadTreatmentSession(string recordDate, string clientSourceRecordIdentifier, string FederalTaxIdentifier)
+        public static TreatmentEpisode OpportuniticlyLoadTreatmentSession(string recordDate, string clientSourceRecordIdentifier, string federalTaxIdentifier)
         {
             DateTime date = DateTime.Parse(recordDate);
             using(var db = new fasams_db())
@@ -87,16 +60,16 @@ namespace PAM2FASAMS.Utilities
                 List<TreatmentEpisode> existing = db.TreatmentEpisodes
                     .Include(x => x.Admissions.Select(a=> a.Discharge))
                     .Include(x => x.ImmediateDischarges)
-                    .Where(c => c.SourceRecordIdentifier == clientSourceRecordIdentifier && c.FederalTaxIdentifier == FederalTaxIdentifier)
+                    .Where(c => c.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && c.FederalTaxIdentifier == federalTaxIdentifier)
                     .ToList();
 
-                if(existing == null)
+                if(existing == null || existing.Count==0)
                 {
-                    return null;
+                    return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), Admissions = new List<Admission>() }; ;
                 }
-                if(existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge == null)))
+                if(existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.Count==0)))
                 {
-                    return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge == null)).FirstOrDefault();
+                    return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.Count == 0)).FirstOrDefault();
                 }
                 if (existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.Any(d=>d.InternalDischargeDate>=date))))
                 {
@@ -107,54 +80,85 @@ namespace PAM2FASAMS.Utilities
         }
         public static Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, UpdateType type, string recordDate)
         {
+            DateTime date = DateTime.Parse(recordDate);
             switch (type)
             {
                 case UpdateType.Admission:
                     {
-                        using(var db = new fasams_db())
-                        {
-                            Admission existing = db.Admissions
-                                .Include(x => x.PerformanceOutcomeMeasures.Select(p => p.SubstanceUseDisorders))
-                                .Include(x => x.Evaluations)
-                                .Include(x => x.Diagnoses)
-                                .Include(x => x.Discharge)
-                                .SingleOrDefault(a => a.TreatmentSourceId == episode.SourceRecordIdentifier);
-
-                            if(existing == null)
-                            {
-                                existing = new Admission { SourceRecordIdentifier = Guid.NewGuid().ToString() };
-                            }
-
-                            return existing;
-                        }
+                        return OpportuniticlyLoadAdmission(episode, recordDate);
                     }
                 case UpdateType.Update:
                     {
-                        if (episode.Admissions.Exists(a => a.TreatmentSourceId == episode.SourceRecordIdentifier && a.PerformanceOutcomeMeasures!=null))
+                        if (episode.Admissions.Exists(a => a.TreatmentSourceId == episode.SourceRecordIdentifier && a.PerformanceOutcomeMeasures!=null && a.InternalAdmissionDate <= date))
                         {
-                            return episode.Admissions.Where(a => a.TreatmentSourceId == episode.SourceRecordIdentifier).SingleOrDefault();
+                            return episode.Admissions.Where(a => a.TreatmentSourceId == episode.SourceRecordIdentifier && a.PerformanceOutcomeMeasures != null && a.InternalAdmissionDate <= date).SingleOrDefault();
                         }
                         else
                         {
-                            using (var db = new fasams_db())
-                            {
-                                Admission existing = db.Admissions
-                                    .Include(x => x.PerformanceOutcomeMeasures.Select(p => p.SubstanceUseDisorders))
-                                    .Include(x => x.Evaluations)
-                                    .Include(x => x.Diagnoses)
-                                    .Include(x => x.Discharge)
-                                    .SingleOrDefault(a => a.TreatmentSourceId == episode.SourceRecordIdentifier);
-
-                                return existing;
-                            }
+                            return OpportuniticlyLoadAdmission(episode, recordDate);
                         }
                     }
                 case UpdateType.Discharge:
                     {
-                        return null;
+                        if (episode.Admissions.Exists(a => a.TreatmentSourceId == episode.SourceRecordIdentifier && a.PerformanceOutcomeMeasures != null && a.InternalAdmissionDate <= date && a.Discharge == null))
+                        {
+                            return episode.Admissions.Where(a => a.TreatmentSourceId == episode.SourceRecordIdentifier && a.PerformanceOutcomeMeasures != null && a.InternalAdmissionDate <= date && a.Discharge == null).SingleOrDefault();
+                        }
+                        else
+                        {
+                            return OpportuniticlyLoadAdmission(episode, recordDate);
+                        }
                     }
                 default:
                     return null;
+            }
+        }
+        public static Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, string recordDate)
+        {
+            DateTime date = DateTime.Parse(recordDate);
+            using(var db = new fasams_db())
+            {
+                List<Admission> existing = db.Admissions
+                    .Include(x => x.PerformanceOutcomeMeasures.Select(p => p.SubstanceUseDisorders))
+                    .Include(x => x.Evaluations)
+                    .Include(x => x.Diagnoses)
+                    .Include(x => x.Discharge)
+                    .Where(a => a.TreatmentSourceId == episode.SourceRecordIdentifier)
+                    .ToList();
+
+                if (existing == null || existing.Count == 0)
+                {
+                    return new Admission { SourceRecordIdentifier = Guid.NewGuid().ToString() };
+                }
+                if(existing.Any(a=>a.InternalAdmissionDate <= date && a.Discharge.Count == 0))
+                {
+                    return existing.Where(a => a.InternalAdmissionDate <= date && a.Discharge.Count == 0).FirstOrDefault();
+                }
+                if (existing.Any(a => a.InternalAdmissionDate <= date && a.Discharge.Any(d => d.InternalDischargeDate >= date)))
+                {
+                    return existing.Where(a => a.InternalAdmissionDate <= date && a.Discharge.Any(d => d.InternalDischargeDate >= date)).FirstOrDefault();
+                }
+                return null;
+            }
+        }
+        public static Discharge OpportuniticlyLoadDischarge(Admission admission, string recordDate)
+        {
+            DateTime date = DateTime.Parse(recordDate);
+            using(var db = new fasams_db())
+            {
+                List<Discharge> existing = db.Discharges
+                    .Include(x => x.PerformanceOutcomeMeasures)
+                    .Include(x => x.Evaluations)
+                    .Include(x => x.Diagnoses)
+                    .Where(d => d.AdmitSourceId == admission.SourceRecordIdentifier)
+                    .ToList();
+
+                if (existing == null || existing.Count == 0)
+                {
+                    return new Discharge { SourceRecordIdentifier = Guid.NewGuid().ToString() };
+                }
+
+                return null;
             }
         }
         public static ProviderClient OpportuniticlyLoadProviderClient(ProviderClients currentJob, ProviderClientIdentifier SSN, string FederalTaxIdentifier)

@@ -30,6 +30,7 @@ namespace PAM2FASAMS
                 {
                     options.Directory = Environment.CurrentDirectory;
                 }
+                options.Directory = Path.GetFullPath(options.Directory);
                 IEnumerable<InputFile> inputFiles = FileMapping.GetFileMapping().OrderBy(i => i.Sequence);
                 Console.WriteLine("Beginning batch execution");
                 foreach(InputFile file in inputFiles)

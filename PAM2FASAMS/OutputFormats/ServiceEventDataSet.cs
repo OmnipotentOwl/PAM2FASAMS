@@ -54,7 +54,7 @@ namespace PAM2FASAMS.OutputFormats
         public string ServiceDate { get; set; }
         public string StartTime { get; set; }
         [Required]
-        public object ExpenditureOcaCode { get; set; }
+        public string ExpenditureOcaCode { get; set; }
         [Required]
         public uint ServiceUnitCount { get; set; }
         [Required]

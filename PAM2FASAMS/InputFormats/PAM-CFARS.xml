@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<FileMap>
+  <Field Name="SSN" Start="0" Length="9"/>
+  <Field Name="ContractorID" Start="9" Length="10"/>
+  <Field Name="Purpose" Start="19" Length="1"/>
+  <Field Name="EvalDate" Start="20" Length="8"/>
+  <Field Name="ProvId" Start="28" Length="10"/>
+  <Field Name="ProGpurP" Start="38" Length="1"/>
+  <Field Name="EduLevel" Start="39" Length="2"/>
+  <Field Name="FMHINum" Start="41" Length="9"/>
+  <Field Name="SAHist" Start="50" Length="1"/>
+  <Field Name="Depress" Start="51" Length="1"/>
+  <Field Name="Anxiety" Start="52" Length="1"/>
+  <Field Name="HyperAct" Start="53" Length="1"/>
+  <Field Name="Thought" Start="54" Length="1"/>
+  <Field Name="Cognitiv" Start="55" Length="1"/>
+  <Field Name="Medical" Start="56" Length="1"/>
+  <Field Name="Traumati" Start="57" Length="1"/>
+  <Field Name="Substanc" Start="58" Length="1"/>
+  <Field Name="Relation" Start="59" Length="1"/>
+  <Field Name="Behavior" Start="60" Length="1"/>
+  <Field Name="ADLFunct" Start="61" Length="1"/>
+  <Field Name="SocLegal" Start="62" Length="1"/>
+  <Field Name="WorkScho" Start="63" Length="1"/>
+  <Field Name="DangSelf" Start="64" Length="1"/>
+  <Field Name="DangOth" Start="65" Length="1"/>
+  <Field Name="Security" Start="66" Length="1"/>
+  <Field Name="ProvInfo" Start="67" Length="20"/>
+  <Field Name="ContNum1" Start="87" Length="5"/>
+  <Field Name="ContNum2" Start="92" Length="5"/>
+  <Field Name="ContNum3" Start="97" Length="5"/>
+  <Field Name="MedRecpId" Start="102" Length="10"/>
+  <Field Name="MedProvId" Start="112" Length="9"/>
+  <Field Name="MedPlanId" Start="121" Length="2"/>
+  <Field Name="CntyServ" Start="123" Length="2"/>
+</FileMap>

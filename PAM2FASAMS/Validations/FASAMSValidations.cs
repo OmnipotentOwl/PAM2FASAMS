@@ -70,6 +70,52 @@ namespace PAM2FASAMS
                     break;
             }
         }
+        public static void ProcessDischarge(Admission admission, Discharge discharge)
+        {
+            switch (discharge.TypeCode)
+            {
+                case "1":
+                    {
+                        if (admission.Discharge.Any(d => d.TypeCode == "1"))
+                            if (admission.Discharge.Any(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier))
+                            {
+                                //same record so just replace it.
+                                var existingItem = admission.Discharge.Where(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier).FirstOrDefault();
+                                int id = admission.Discharge.IndexOf(existingItem);
+                                admission.Discharge[id] = discharge;
+                                return;
+                            }
+                            else
+                            {
+                                return;
+                            }
+
+                        admission.Discharge.Add(discharge);
+                        return;
+                    }
+                case "2":
+                    {
+                        if (admission.Discharge.Any(d => d.TypeCode == "2"))
+                            if (admission.Discharge.Any(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier))
+                            {
+                                //same record so just replace it.
+                                var existingItem = admission.Discharge.Where(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier).FirstOrDefault();
+                                int id = admission.Discharge.IndexOf(existingItem);
+                                admission.Discharge[id] = discharge;
+                                return;
+                            }
+                            else
+                            {
+                                return;
+                            }
+
+                        admission.Discharge.Add(discharge);
+                        return;
+                    }
+                default:
+                    break;
+            }
+        }
         public static void ProcessPerformanceOutcomeMeasure(Admission admission, PerformanceOutcomeMeasure outcomeMeasure)
         {
             if(admission.PerformanceOutcomeMeasures.Any(p => p.SourceRecordIdentifier == outcomeMeasure.SourceRecordIdentifier))
@@ -87,6 +133,22 @@ namespace PAM2FASAMS
             }
             //last option
             admission.PerformanceOutcomeMeasures.Add(outcomeMeasure);
+        }
+        public static void ProcessPerformanceOutcomeMeasure(Discharge discharge, PerformanceOutcomeMeasure outcomeMeasure)
+        {
+            if (discharge.PerformanceOutcomeMeasures.SourceRecordIdentifier == outcomeMeasure.SourceRecordIdentifier)
+            {
+                //same record so just replace it.
+                discharge.PerformanceOutcomeMeasures = outcomeMeasure;
+                return;
+            }
+            if (discharge.PerformanceOutcomeMeasures.PerformanceOutcomeMeasureDate != outcomeMeasure.PerformanceOutcomeMeasureDate)
+            {
+                //complex data merge here.
+                return;
+            }
+            //last option
+            discharge.PerformanceOutcomeMeasures=outcomeMeasure;
         }
         public static string ValidateFASAMSDate(string dateRaw)
         {

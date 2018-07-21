@@ -111,6 +111,7 @@ namespace PAM2FASAMS.OutputFormats
                 return DateTime.Now;
             }
         }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
         [ForeignKey("Episode"), Column(Order = 0)]
         public string TreatmentSourceId { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
@@ -318,6 +319,19 @@ namespace PAM2FASAMS.OutputFormats
             set
             {
                 this.actionField = value;
+            }
+        }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public DateTime InternalEvaluationDate
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(EvaluationDate))
+                {
+                    return DateTime.Parse(EvaluationDate);
+                }
+                return DateTime.Now;
             }
         }
     }
