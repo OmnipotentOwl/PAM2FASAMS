@@ -510,12 +510,14 @@ namespace PAM2FASAMS
                         ProviderClientIdentifiers = new List<ProviderClientIdentifier>()
                     };
                     ServiceEvent service = new ServiceEvent {
-                        CoveredServiceModifiers = new List<CoveredServiceModifier>(),
-                        ExpenditureModifiers = new List<ExpenditureModifier>()
+                        ServiceEventCoveredServiceModifiers = new List<ServiceEventCoveredServiceModifier>(),
+                        ServiceEventExpenditureModifiers = new List<ServiceEventExpenditureModifier>()
                     };
                     var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
                     var clientId = FASAMSValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
+                    var recordDate = FASAMSValidations.ValidateFASAMSDate(pamRow.Where(r => r.Name == "ServDate").Single().Value);
                     client = DataTools.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    var treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(recordDate, client.SourceRecordIdentifier, fedTaxId);
                     if (IsDelete)
                     {
 
@@ -526,13 +528,13 @@ namespace PAM2FASAMS
                         service.TypeCode = "1";
                         service.FederalTaxIdentifier = fedTaxId;
                         service.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
-                        service.EpisodeSourceRecordIdentifier = ""; //todo
+                        service.EpisodeSourceRecordIdentifier = treatmentEpisode.SourceRecordIdentifier; //todo
                         service.AdmissionSourceRecordIdentifier = ""; //todo
                         service.ProgramAreaCode = (pamRow.Where(r => r.Name == "ProgType").Single().Value);
                         service.TreatmentSettingCode = (pamRow.Where(r => r.Name == "Setting").Single().Value);
                         service.CoveredServiceCode = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
                         service.HcpcsProcedureCode = (pamRow.Where(r => r.Name == "ProcCode").Single().Value);
-                        service.ServiceDate = (pamRow.Where(r => r.Name == "ServDate").Single().Value);
+                        service.ServiceDate = recordDate;
                         service.StartTime = (pamRow.Where(r => r.Name == "BeginTime").Single().Value);
                         service.ServiceUnitCount = uint.Parse(pamRow.Where(r => r.Name == "Unit").Single().Value);
                         service.FundCode = (pamRow.Where(r => r.Name == "Fund").Single().Value);
@@ -540,40 +542,40 @@ namespace PAM2FASAMS
                         service.ServiceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyServ").Single().Value);
                         if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier1").Single().Value))
                         {
-                            CoveredServiceModifier modifier = new CoveredServiceModifier
+                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier1").Single().Value.Trim()
                             };
-                            service.CoveredServiceModifiers.Add(modifier);
+                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
                         }
                         if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier2").Single().Value))
                         {
-                            CoveredServiceModifier modifier = new CoveredServiceModifier
+                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier2").Single().Value.Trim()
                             };
-                            service.CoveredServiceModifiers.Add(modifier);
+                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
                         }
                         if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier3").Single().Value))
                         {
-                            CoveredServiceModifier modifier = new CoveredServiceModifier
+                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier3").Single().Value.Trim()
                             };
-                            service.CoveredServiceModifiers.Add(modifier);
+                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
                         }
                         if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier4").Single().Value))
                         {
-                            ExpenditureModifier modifier = new ExpenditureModifier
+                            ServiceEventExpenditureModifier modifier = new ServiceEventExpenditureModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier4").Single().Value.Trim()
                             };
-                            service.ExpenditureModifiers.Add(modifier);
+                            service.ServiceEventExpenditureModifiers.Add(modifier);
                         }
                     }
                     try
                     {
-                        //DataTools.UpsertProviderClient(client);
+                        DataTools.UpsertServiceEvent(service);
                         serviceEventsDataSet.serviceEvents.Add(service);
                     }
                     catch (DbEntityValidationException ex)
@@ -621,7 +623,85 @@ namespace PAM2FASAMS
             {
                 try
                 {
+                    ServiceEvent service = new ServiceEvent
+                    {
+                        ServiceEventCoveredServiceModifiers = new List<ServiceEventCoveredServiceModifier>(),
+                        ServiceEventExpenditureModifiers = new List<ServiceEventExpenditureModifier>()
+                    };
+                    var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
+                    var recordDate = FASAMSValidations.ValidateFASAMSDate(pamRow.Where(r => r.Name == "ServDate").Single().Value);
+                    if (IsDelete)
+                    {
 
+                    }
+                    else
+                    {
+                        service.SourceRecordIdentifier = Guid.NewGuid().ToString();
+                        service.TypeCode = "2";
+                        service.FederalTaxIdentifier = fedTaxId;
+                        service.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
+                        service.ProgramAreaCode = (pamRow.Where(r => r.Name == "ProgType").Single().Value);
+                        service.CoveredServiceCode = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
+                        service.HcpcsProcedureCode = (pamRow.Where(r => r.Name == "ProcCode").Single().Value);
+                        service.ServiceDate = recordDate;
+                        service.ServiceUnitCount = uint.Parse(pamRow.Where(r => r.Name == "Unit").Single().Value);
+                        service.FundCode = (pamRow.Where(r => r.Name == "Fund").Single().Value);
+                        service.ActualPaymentRateAmount = 0; //todo
+                        service.ServiceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyServ").Single().Value);
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier1").Single().Value))
+                        {
+                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier1").Single().Value.Trim()
+                            };
+                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier2").Single().Value))
+                        {
+                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier2").Single().Value.Trim()
+                            };
+                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier3").Single().Value))
+                        {
+                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier3").Single().Value.Trim()
+                            };
+                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier4").Single().Value))
+                        {
+                            ServiceEventExpenditureModifier modifier = new ServiceEventExpenditureModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier4").Single().Value.Trim()
+                            };
+                            service.ServiceEventExpenditureModifiers.Add(modifier);
+                        }
+                    }
+                    try
+                    {
+                        DataTools.UpsertServiceEvent(service);
+                        serviceEventsDataSet.serviceEvents.Add(service);
+                    }
+                    catch (DbEntityValidationException ex)
+                    {
+                        // Retrieve the error messages as a list of strings.
+                        var errorMessages = ex.EntityValidationErrors
+                                .SelectMany(x => x.ValidationErrors)
+                                .Select(x => x.ErrorMessage);
+
+                        // Join the list to a single string.
+                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                        // Combine the original exception message with the new one.
+                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                        // Throw a new DbEntityValidationException with the improved exception message.
+                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                    }
                 }
                 catch (Exception ex)
                 {

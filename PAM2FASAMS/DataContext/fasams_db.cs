@@ -46,9 +46,9 @@ namespace PAM2FASAMS.DataContext
         public virtual DbSet<Diagnosis> Diagnoses { get; set; }
         public virtual DbSet<Discharge> Discharges { get; set; }
         public virtual DbSet<ServiceEvent> ServiceEvents { get; set; }
-        public virtual DbSet<CoveredServiceModifier> CoveredServiceModifiers { get; set; }
-        public virtual DbSet<HcpcsProcedureModifier> HcpcsProcedureModifiers { get; set; }
-        public virtual DbSet<ExpenditureModifier> ExpenditureModifiers { get; set; }
+        public virtual DbSet<ServiceEventCoveredServiceModifier> CoveredServiceModifiers { get; set; }
+        public virtual DbSet<ServiceEventHcpcsProcedureModifier> HcpcsProcedureModifiers { get; set; }
+        public virtual DbSet<ServiceEventExpenditureModifier> ExpenditureModifiers { get; set; }
 
     }
 }

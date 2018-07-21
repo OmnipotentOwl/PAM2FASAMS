@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<FileMap>
+  <Field Name="ContractorID" Start="0" Length="10"/>
+  <Field Name="SSN" Start="10" Length="9"/>
+  <Field Name="ServDate" Start="19" Length="10"/>
+  <Field Name="BeginTime" Start="27" Length="4"/>
+  <Field Name="CovrdSvcs" Start="31" Length="2"/>
+  <Field Name="ProgType" Start="33" Length="1"/>
+  <Field Name="ProcCode" Start="34" Length="5"/>
+  <Field Name="ProvID" Start="39" Length="10"/>
+  <Field Name="Setting" Start="49" Length="2"/>
+  <Field Name="CntyServ" Start="51" Length="2"/>
+</FileMap>

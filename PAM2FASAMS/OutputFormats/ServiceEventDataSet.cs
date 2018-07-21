@@ -70,9 +70,9 @@ namespace PAM2FASAMS.OutputFormats
         public string PaymentReferenceNumber { get; set; }
         [Required]
         public string ServiceCountyAreaCode { get; set; }
-        public List<CoveredServiceModifier> CoveredServiceModifiers { get; set; }
-        public List<HcpcsProcedureModifier> HcpcsProcedureModifiers { get; set; }
-        public List<ExpenditureModifier> ExpenditureModifiers { get; set; }
+        public List<ServiceEventCoveredServiceModifier> ServiceEventCoveredServiceModifiers { get; set; }
+        public List<ServiceEventHcpcsProcedureModifier> ServiceEventHcpcsProcedureModifiers { get; set; }
+        public List<ServiceEventExpenditureModifier> ServiceEventExpenditureModifiers { get; set; }
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string action { get; set; }
@@ -82,7 +82,7 @@ namespace PAM2FASAMS.OutputFormats
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class CoveredServiceModifier
+    public partial class ServiceEventCoveredServiceModifier
     {
         [Key, Column(Order = 3)]
         public string ModifierCode { get; set; }
@@ -107,7 +107,7 @@ namespace PAM2FASAMS.OutputFormats
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class HcpcsProcedureModifier
+    public partial class ServiceEventHcpcsProcedureModifier
     {
         [Key, Column(Order = 3)]
         public string ModifierCode { get; set; }
@@ -132,7 +132,7 @@ namespace PAM2FASAMS.OutputFormats
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class ExpenditureModifier
+    public partial class ServiceEventExpenditureModifier
     {
         [Key, Column(Order = 3)]
         public string ModifierCode { get; set; }

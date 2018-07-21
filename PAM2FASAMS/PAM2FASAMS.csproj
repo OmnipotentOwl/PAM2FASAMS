@@ -95,6 +95,15 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="InputFormats\FileMapping.xml" />
+    <Content Include="InputFormats\PAM-EVNT-D.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="InputFormats\PAM-EVNT.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="InputFormats\PAM-SERV-D.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="InputFormats\PAM-SERV.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

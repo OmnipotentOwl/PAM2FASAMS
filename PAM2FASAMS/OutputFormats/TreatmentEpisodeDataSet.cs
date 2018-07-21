@@ -100,6 +100,17 @@ namespace PAM2FASAMS.OutputFormats
         public string action { get; set; }
 
         [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public DateTime InternalAdmissionDate
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(AdmissionDate))
+                {
+                    return DateTime.Parse(AdmissionDate);
+                }
+                return DateTime.Now;
+            }
+        }
         [ForeignKey("Episode"), Column(Order = 0)]
         public string TreatmentSourceId { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
@@ -687,6 +698,18 @@ namespace PAM2FASAMS.OutputFormats
             }
         }
 
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public DateTime InternalDischargeDate
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(DischargeDate))
+                {
+                    return DateTime.Parse(DischargeDate);
+                }
+                return DateTime.Now;
+            }
+        }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
         [ForeignKey("Admission"), Column(Order = 0)]
         public string AdmitSourceId { get; set; }

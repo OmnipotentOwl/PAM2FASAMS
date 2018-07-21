@@ -21,7 +21,7 @@ namespace PAM2FASAMS.Utilities
                         using (var db = new fasams_db())
                         {
                             TreatmentEpisode existing = db.TreatmentEpisodes
-                                .Include(x => x.Admissions)
+                                .Include(x => x.Admissions.Select(a => a.Discharge))
                                 .Include(x => x.ImmediateDischarges)
                                 .SingleOrDefault(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier);
 
@@ -78,6 +78,32 @@ namespace PAM2FASAMS.Utilities
                     return null;
             }
             
+        }
+        public static TreatmentEpisode OpportuniticlyLoadTreatmentSession(string recordDate, string clientSourceRecordIdentifier, string FederalTaxIdentifier)
+        {
+            DateTime date = DateTime.Parse(recordDate);
+            using(var db = new fasams_db())
+            {
+                List<TreatmentEpisode> existing = db.TreatmentEpisodes
+                    .Include(x => x.Admissions.Select(a=> a.Discharge))
+                    .Include(x => x.ImmediateDischarges)
+                    .Where(c => c.SourceRecordIdentifier == clientSourceRecordIdentifier && c.FederalTaxIdentifier == FederalTaxIdentifier)
+                    .ToList();
+
+                if(existing == null)
+                {
+                    return null;
+                }
+                if(existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge == null)))
+                {
+                    return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge == null)).FirstOrDefault();
+                }
+                if (existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.Any(d=>d.InternalDischargeDate>=date))))
+                {
+                    return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.Any(d => d.InternalDischargeDate >= date))).FirstOrDefault();
+                }
+                return null;
+            }
         }
         public static Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, UpdateType type, string recordDate)
         {
@@ -302,6 +328,48 @@ namespace PAM2FASAMS.Utilities
                 else
                 {
                     db.Entry(existing).CurrentValues.SetValues(treatmentEpisode);
+                }
+                db.SaveChanges();
+            }
+        }
+        public static void UpsertServiceEvent(ServiceEvent serviceEvent)
+        {
+            using(var db = new fasams_db())
+            {
+                ServiceEvent existing = db.ServiceEvents
+                    .Include(x => x.ServiceEventCoveredServiceModifiers)
+                    .Include(x => x.ServiceEventHcpcsProcedureModifiers)
+                    .Include(x => x.ServiceEventExpenditureModifiers)
+                    .SingleOrDefault(s => s.SourceRecordIdentifier == serviceEvent.SourceRecordIdentifier);
+
+                if (existing == null)
+                {
+                    db.ServiceEvents.Add(serviceEvent);
+                    if (serviceEvent.ServiceEventCoveredServiceModifiers != null)
+                    {
+                        foreach(var row in serviceEvent.ServiceEventCoveredServiceModifiers)
+                        {
+                            db.CoveredServiceModifiers.Add(row);
+                        }
+                    }
+                    if (serviceEvent.ServiceEventHcpcsProcedureModifiers != null)
+                    {
+                        foreach (var row in serviceEvent.ServiceEventHcpcsProcedureModifiers)
+                        {
+                            db.HcpcsProcedureModifiers.Add(row);
+                        }
+                    }
+                    if (serviceEvent.ServiceEventExpenditureModifiers != null)
+                    {
+                        foreach (var row in serviceEvent.ServiceEventExpenditureModifiers)
+                        {
+                            db.ExpenditureModifiers.Add(row);
+                        }
+                    }
+                }
+                else
+                {
+                    db.Entry(existing).CurrentValues.SetValues(serviceEvent);
                 }
                 db.SaveChanges();
             }

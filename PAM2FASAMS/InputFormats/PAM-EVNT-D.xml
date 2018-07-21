@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<FileMap>
+  <Field Name="ContractorID" Start="0" Length="10"/>
+  <Field Name="SiteId" Start="10" Length="2"/>
+  <Field Name="AgeGroup" Start="12" Length="1"/>
+  <Field Name="FaciliTyp" Start="13" Length="1"/>
+  <Field Name="ProgType" Start="14" Length="1"/>
+  <Field Name="CovrdSvcs" Start="15" Length="2"/>
+  <Field Name="ProcCode" Start="17" Length="5"/>
+  <Field Name="ServDate" Start="22" Length="8"/>
+  <Field Name="StaffId" Start="30" Length="12"/>
+  <Field Name="ProvId" Start="42" Length="12"/>
+</FileMap>
