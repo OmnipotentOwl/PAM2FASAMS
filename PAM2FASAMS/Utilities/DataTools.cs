@@ -23,9 +23,9 @@ namespace PAM2FASAMS.Utilities
                     }
                 case UpdateType.Update:
                     {
-                        if (currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && a.Discharge == null))))
+                        if (currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && (a.Discharge == null || a.Discharge.Count == 0)))))
                         {
-                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && a.Discharge == null))).SingleOrDefault();
+                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && (a.Discharge == null || a.Discharge.Count == 0)))).SingleOrDefault();
                         }
                         else
                         {
@@ -34,9 +34,9 @@ namespace PAM2FASAMS.Utilities
                     }
                 case UpdateType.Discharge:
                     {
-                        if (currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && a.Discharge == null))))
+                        if (currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && (a.Discharge == null || a.Discharge.Count == 0)))))
                         {
-                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && a.Discharge == null))).Single();
+                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.Admissions.Exists(a => a.InternalAdmissionDate <= date && (a.Discharge == null || a.Discharge.Count == 0)))).Single();
                         }
                         else
                         {
@@ -100,9 +100,9 @@ namespace PAM2FASAMS.Utilities
                     }
                 case UpdateType.Discharge:
                     {
-                        if (episode.Admissions.Exists(a => a.TreatmentSourceId == episode.SourceRecordIdentifier && a.PerformanceOutcomeMeasures != null && a.InternalAdmissionDate <= date && a.Discharge == null))
+                        if (episode.Admissions.Exists(a => a.TreatmentSourceId == episode.SourceRecordIdentifier && a.PerformanceOutcomeMeasures != null && a.InternalAdmissionDate <= date && (a.Discharge == null || a.Discharge.Count==0)))
                         {
-                            return episode.Admissions.Where(a => a.TreatmentSourceId == episode.SourceRecordIdentifier && a.PerformanceOutcomeMeasures != null && a.InternalAdmissionDate <= date && a.Discharge == null).SingleOrDefault();
+                            return episode.Admissions.Where(a => a.TreatmentSourceId == episode.SourceRecordIdentifier && a.PerformanceOutcomeMeasures != null && a.InternalAdmissionDate <= date && (a.Discharge == null || a.Discharge.Count == 0)).SingleOrDefault();
                         }
                         else
                         {
@@ -128,7 +128,7 @@ namespace PAM2FASAMS.Utilities
 
                 if (existing == null || existing.Count == 0)
                 {
-                    return new Admission { SourceRecordIdentifier = Guid.NewGuid().ToString() };
+                    return new Admission { SourceRecordIdentifier = Guid.NewGuid().ToString(), Evaluations = new List<Evaluation>(), Diagnoses = new List<Diagnosis>(), Discharge = new List<Discharge>() };
                 }
                 if(existing.Any(a=>a.InternalAdmissionDate <= date && a.Discharge.Count == 0))
                 {
@@ -279,7 +279,7 @@ namespace PAM2FASAMS.Utilities
             using(var db = new fasams_db())
             {
                 TreatmentEpisode existing = db.TreatmentEpisodes
-                    .Include(x => x.Admissions)
+                    .Include(x => x.Admissions.Select(a => a.Discharge))
                     .Include(x => x.ImmediateDischarges)
                     .SingleOrDefault(e => e.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier && e.FederalTaxIdentifier == treatmentEpisode.FederalTaxIdentifier);
 
@@ -332,6 +332,105 @@ namespace PAM2FASAMS.Utilities
                 else
                 {
                     db.Entry(existing).CurrentValues.SetValues(treatmentEpisode);
+                    if (treatmentEpisode.Admissions != null)
+                    {
+                        //db.Entry(existing.Admissions).CurrentValues.SetValues(treatmentEpisode.Admissions);
+                        foreach (var row in treatmentEpisode.Admissions)
+                        {
+                            var exAdmit = db.Admissions.Find(row.SourceRecordIdentifier);
+                            db.Entry(exAdmit).CurrentValues.SetValues(row);
+                            if (row.PerformanceOutcomeMeasures != null)
+                            {
+                                foreach (var perf in row.PerformanceOutcomeMeasures)
+                                {
+                                    var exPerf = db.PerformanceOutcomeMeasures.Find(perf.SourceRecordIdentifier);
+                                    if (exPerf != null)
+                                    {
+                                        db.Entry(exPerf).CurrentValues.SetValues(perf);
+                                    }
+                                    else
+                                    {
+                                        db.PerformanceOutcomeMeasures.Add(perf);
+                                    }
+                                }
+                            }
+                            if (row.Evaluations != null)
+                            {
+                                foreach (var item in row.Evaluations)
+                                {
+                                    var exItem = db.Evaluations.Find(item.SourceRecordIdentifier);
+                                    if (exItem != null)
+                                    {
+                                        db.Entry(exItem).CurrentValues.SetValues(item);
+                                    }
+                                    else
+                                    {
+                                        db.Evaluations.Add(item);
+                                    }
+                                }
+                            }
+                            if (row.Diagnoses != null)
+                            {
+                                foreach (var item in row.Diagnoses)
+                                {
+                                    var exItem = db.Diagnoses.Find(item.SourceRecordIdentifier);
+                                    if (exItem != null)
+                                    {
+                                        db.Entry(exItem).CurrentValues.SetValues(item);
+                                    }
+                                    else
+                                    {
+                                        db.Diagnoses.Add(item);
+                                    }
+                                }
+                            }
+                            if (row.Discharge != null)
+                            {
+                                foreach (var item in row.Discharge)
+                                {
+                                    var exItem = db.Discharges.Find(item.SourceRecordIdentifier);
+                                    if (exItem != null)
+                                    {
+                                        db.Entry(exItem).CurrentValues.SetValues(item);
+                                    }
+                                    else
+                                    {
+                                        db.Discharges.Add(item);
+                                    }
+                                    if(item.Diagnoses != null)
+                                    {
+                                        foreach(var dx in item.Diagnoses)
+                                        {
+                                            var exDx = db.Diagnoses.Find(dx.SourceRecordIdentifier);
+                                            if (exDx != null)
+                                            {
+                                                db.Entry(exDx).CurrentValues.SetValues(dx);
+                                            }
+                                            else
+                                            {
+                                                db.Diagnoses.Add(dx);
+                                            }
+                                        }
+                                    }
+                                    if (item.Evaluations != null)
+                                    {
+                                        foreach (var eval in item.Evaluations)
+                                        {
+                                            var exEval = db.Evaluations.Find(eval.SourceRecordIdentifier);
+                                            if (exEval != null)
+                                            {
+                                                db.Entry(exEval).CurrentValues.SetValues(eval);
+                                            }
+                                            else
+                                            {
+                                                db.Evaluations.Add(eval);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 db.SaveChanges();
             }

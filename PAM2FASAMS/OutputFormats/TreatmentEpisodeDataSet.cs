@@ -334,6 +334,16 @@ namespace PAM2FASAMS.OutputFormats
                 return DateTime.Now;
             }
         }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Admission")]
+        public string Admission_SourceRecordIdentifier { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public virtual Admission Admission { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Discharge")]
+        public string Discharge_SourceRecordIdentifier { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public virtual Discharge Discharge { get; set; }
     }
 
     [Table(name: "Diagnoses")]
@@ -471,6 +481,17 @@ namespace PAM2FASAMS.OutputFormats
                 this.actionField = value;
             }
         }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Admission")]
+        public string Admission_SourceRecordIdentifier { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public virtual Admission Admission { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Discharge")]
+        public string Discharge_SourceRecordIdentifier { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public virtual Discharge Discharge { get; set; }
     }
 
     [System.SerializableAttribute()]

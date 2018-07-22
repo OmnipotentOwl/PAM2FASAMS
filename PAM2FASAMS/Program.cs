@@ -61,7 +61,8 @@ namespace PAM2FASAMS
                         case "PERF":
                             PAMConvert.InvokePerfConversion(options.InputFile, options.OutputFile);
                             break;
-                        case "CFAR":
+                        case "CFARS":
+                            PAMConvert.InvokeCFARSConversion(options.InputFile, options.OutputFile);
                             break;
                         case "FARS":
                             break;
@@ -95,6 +96,9 @@ namespace PAM2FASAMS
                         break;
                     case FileType.PERF:
                         PAMConvert.InvokePerfConversion(options.InputFile, options.OutputFile);
+                        break;
+                    case FileType.CFAR:
+                        PAMConvert.InvokeCFARSConversion(options.InputFile, options.OutputFile);
                         break;
                     case FileType.SERV:
                         PAMConvert.InvokeServConversion(options.InputFile, options.OutputFile);

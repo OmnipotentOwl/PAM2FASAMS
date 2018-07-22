@@ -82,6 +82,7 @@ namespace PAM2FASAMS
                                 //same record so just replace it.
                                 var existingItem = admission.Discharge.Where(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier).FirstOrDefault();
                                 int id = admission.Discharge.IndexOf(existingItem);
+                                discharge.Admission = admission;
                                 admission.Discharge[id] = discharge;
                                 return;
                             }
@@ -90,6 +91,7 @@ namespace PAM2FASAMS
                                 return;
                             }
 
+                        discharge.Admission = admission;
                         admission.Discharge.Add(discharge);
                         return;
                     }
@@ -101,6 +103,7 @@ namespace PAM2FASAMS
                                 //same record so just replace it.
                                 var existingItem = admission.Discharge.Where(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier).FirstOrDefault();
                                 int id = admission.Discharge.IndexOf(existingItem);
+                                discharge.Admission = admission;
                                 admission.Discharge[id] = discharge;
                                 return;
                             }
@@ -108,7 +111,7 @@ namespace PAM2FASAMS
                             {
                                 return;
                             }
-
+                        discharge.Admission = admission;
                         admission.Discharge.Add(discharge);
                         return;
                     }
@@ -136,6 +139,11 @@ namespace PAM2FASAMS
         }
         public static void ProcessPerformanceOutcomeMeasure(Discharge discharge, PerformanceOutcomeMeasure outcomeMeasure)
         {
+            if(discharge.PerformanceOutcomeMeasures == null)
+            {
+                discharge.PerformanceOutcomeMeasures = outcomeMeasure;
+                return;
+            }
             if (discharge.PerformanceOutcomeMeasures.SourceRecordIdentifier == outcomeMeasure.SourceRecordIdentifier)
             {
                 //same record so just replace it.
@@ -245,6 +253,43 @@ namespace PAM2FASAMS
                 case "6": return "0";
                 case "97": return "0";
                 default: return "";
+            }
+        }
+        public static string ValidateEvalToolScore(FileType type, List<Field> fields)
+        {
+            switch (type)
+            {
+                case FileType.CFAR:
+                    {
+                        int saHist = int.Parse(fields.Where(r => r.Name == "SAHist").Single().Value.Trim());
+                        int depress = int.Parse(fields.Where(r => r.Name == "Depress").Single().Value.Trim());
+                        int anxiety = int.Parse(fields.Where(r => r.Name == "Anxiety").Single().Value.Trim());
+                        int hyperAct = int.Parse(fields.Where(r => r.Name == "HyperAct").Single().Value.Trim());
+                        int thought = int.Parse(fields.Where(r => r.Name == "Thought").Single().Value.Trim());
+                        int cognitiv = int.Parse(fields.Where(r => r.Name == "Cognitiv").Single().Value.Trim());
+                        int medical = int.Parse(fields.Where(r => r.Name == "Medical").Single().Value.Trim());
+                        int traumati = int.Parse(fields.Where(r => r.Name == "Traumati").Single().Value.Trim());
+                        int substanc = int.Parse(fields.Where(r => r.Name == "Substanc").Single().Value.Trim());
+                        int relation = int.Parse(fields.Where(r => r.Name == "Relation").Single().Value.Trim());
+                        int behavior = int.Parse(fields.Where(r => r.Name == "Behavior").Single().Value.Trim());
+                        int aDLFunct = int.Parse(fields.Where(r => r.Name == "ADLFunct").Single().Value.Trim());
+                        int socLegal = int.Parse(fields.Where(r => r.Name == "SocLegal").Single().Value.Trim());
+                        int workScho = int.Parse(fields.Where(r => r.Name == "WorkScho").Single().Value.Trim());
+                        int dangSelf = int.Parse(fields.Where(r => r.Name == "DangSelf").Single().Value.Trim());
+                        int dangOth = int.Parse(fields.Where(r => r.Name == "DangOth").Single().Value.Trim());
+                        int security = int.Parse(fields.Where(r => r.Name == "Security").Single().Value.Trim());
+                        return (saHist+depress+anxiety+hyperAct+thought+cognitiv+medical+traumati+substanc+relation+behavior+aDLFunct+socLegal+workScho+dangSelf+dangOth+security).ToString();
+                    }
+                case FileType.FARS:
+                    {
+                        return null;
+                    }
+                case FileType.ASAM:
+                    {
+                        return null;
+                    }
+                default:
+                    return null;
             }
         }
     }

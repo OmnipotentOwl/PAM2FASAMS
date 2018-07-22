@@ -177,7 +177,8 @@ namespace PAM2FASAMS
                                         IsCodependentCode = "1",
                                         DaysWaitingToEnterTreatmentKnownCode = "0",
                                         PerformanceOutcomeMeasures = new List<PerformanceOutcomeMeasure>(),
-                                        Diagnoses = new List<Diagnosis>()
+                                        Diagnoses = new List<Diagnosis>(),
+                                        Discharge = new List<Discharge>()
                                     };
 
                                     PerformanceOutcomeMeasure performanceOutcomeMeasure = new PerformanceOutcomeMeasure
@@ -596,7 +597,7 @@ namespace PAM2FASAMS
                                     TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
 
                                     break;
-                                }
+                                } 
                         }
                     }
                 }
@@ -628,7 +629,152 @@ namespace PAM2FASAMS
             {
                 try
                 {
+                    var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
+                    var clientId = FASAMSValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
+                    var client = DataTools.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    string evalDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
+                    if (IsDelete)
+                    {
 
+                    }
+                    else
+                    {
+                        var type = PAMValidations.ValidateEvalPurpose(FileType.CFAR, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
+                        switch (type)
+                        {
+                            case PAMValidations.UpdateType.Admission:
+                                {
+                                    TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == "6").SingleOrDefault();
+                                    var score = FASAMSValidations.ValidateEvalToolScore(FileType.CFAR, pamRow);
+                                    if (evaluation == null||evaluation.ScoreCode != score)
+                                    {
+                                        Evaluation newEvaluation = new Evaluation
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = (pamRow.Where(r => r.Name == "EduLevel").Single().Value).Trim(),
+                                            StaffIdentifier = (pamRow.Where(r => r.Name == "FMHINum").Single().Value).Trim(),
+                                            TypeCode = "2",
+                                            ToolCode = "6",
+                                            EvaluationDate = evalDate,
+                                            ScoreCode = score
+                                        };
+                                        admission.Evaluations.Add(newEvaluation);
+                                    }
+                                    FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    try
+                                    {
+                                        DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                    }
+                                    catch (DbEntityValidationException ex)
+                                    {
+                                        // Retrieve the error messages as a list of strings.
+                                        var errorMessages = ex.EntityValidationErrors
+                                                .SelectMany(x => x.ValidationErrors)
+                                                .Select(x => x.ErrorMessage);
+
+                                        // Join the list to a single string.
+                                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                                        // Combine the original exception message with the new one.
+                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                                        // Throw a new DbEntityValidationException with the improved exception message.
+                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                                    }
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.Update:
+                                {
+                                    TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == "6").SingleOrDefault();
+                                    var score = FASAMSValidations.ValidateEvalToolScore(FileType.CFAR, pamRow);
+                                    if (evaluation == null || evaluation.ScoreCode != score)
+                                    {
+                                        Evaluation newEvaluation = new Evaluation
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = (pamRow.Where(r => r.Name == "EduLevel").Single().Value).Trim(),
+                                            StaffIdentifier = (pamRow.Where(r => r.Name == "FMHINum").Single().Value).Trim(),
+                                            TypeCode = "2",
+                                            ToolCode = "6",
+                                            EvaluationDate = evalDate,
+                                            ScoreCode = score
+                                        };
+                                        admission.Evaluations.Add(newEvaluation);
+                                    }
+                                    FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    try
+                                    {
+                                        DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                    }
+                                    catch (DbEntityValidationException ex)
+                                    {
+                                        // Retrieve the error messages as a list of strings.
+                                        var errorMessages = ex.EntityValidationErrors
+                                                .SelectMany(x => x.ValidationErrors)
+                                                .Select(x => x.ErrorMessage);
+
+                                        // Join the list to a single string.
+                                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                                        // Combine the original exception message with the new one.
+                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                                        // Throw a new DbEntityValidationException with the improved exception message.
+                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                                    }
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.Discharge:
+                                {
+                                    TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Discharge discharge = DataTools.OpportuniticlyLoadDischarge(admission, evalDate);
+                                    Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == "6").SingleOrDefault();
+                                    var score = FASAMSValidations.ValidateEvalToolScore(FileType.CFAR, pamRow);
+                                    if (evaluation == null || evaluation.ScoreCode != score)
+                                    {
+                                        Evaluation newEvaluation = new Evaluation
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = (pamRow.Where(r => r.Name == "EduLevel").Single().Value).Trim(),
+                                            StaffIdentifier = (pamRow.Where(r => r.Name == "FMHINum").Single().Value).Trim(),
+                                            TypeCode = "2",
+                                            ToolCode = "6",
+                                            EvaluationDate = evalDate,
+                                            ScoreCode = score
+                                        };
+                                        discharge.Evaluations.Add(newEvaluation);
+                                    }
+                                    FASAMSValidations.ProcessDischarge(admission, discharge);
+                                    FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    try
+                                    {
+                                        DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                    }
+                                    catch (DbEntityValidationException ex)
+                                    {
+                                        // Retrieve the error messages as a list of strings.
+                                        var errorMessages = ex.EntityValidationErrors
+                                                .SelectMany(x => x.ValidationErrors)
+                                                .Select(x => x.ErrorMessage);
+
+                                        // Join the list to a single string.
+                                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                                        // Combine the original exception message with the new one.
+                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                                        // Throw a new DbEntityValidationException with the improved exception message.
+                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                                    }
+                                    break;
+                                }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -939,7 +1085,9 @@ namespace PAM2FASAMS
                             fileField.Value =
                             line.Substring(field.Start, field.Length);
                         }
-                        catch { }
+                        catch {
+                            fileField.Value = "";
+                        }
 
                         //Set the name of the field.
                         fileField.Name = field.Name;
@@ -1025,7 +1173,7 @@ namespace PAM2FASAMS
         #endregion
     }
 
-    internal class Field
+    public class Field
     {
         public string Name { get; set; }
         public int Length { get; set; }
