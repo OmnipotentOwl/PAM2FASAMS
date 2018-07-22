@@ -76,47 +76,38 @@ namespace PAM2FASAMS
             {
                 case "1":
                     {
-                        if (admission.Discharge.Any(d => d.TypeCode == "1"))
-                            if (admission.Discharge.Any(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier))
+                        if (admission.Discharge != null)
+                            if (admission.Discharge.SourceRecordIdentifier == discharge.SourceRecordIdentifier)
                             {
                                 //same record so just replace it.
-                                var existingItem = admission.Discharge.Where(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier).FirstOrDefault();
-                                int id = admission.Discharge.IndexOf(existingItem);
-                                discharge.Admission = admission;
-                                discharge.AdmitSourceId = admission.SourceRecordIdentifier;
-                                admission.Discharge[id] = discharge;
+                                admission.Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier;
+                                admission.Discharge = discharge;
                                 return;
                             }
                             else
                             {
                                 return;
                             }
-
-                        discharge.Admission = admission;
-                        discharge.AdmitSourceId = admission.SourceRecordIdentifier;
-                        admission.Discharge.Add(discharge);
+                        admission.Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier;
+                        admission.Discharge = discharge;
                         return;
                     }
                 case "2":
                     {
-                        if (admission.Discharge.Any(d => d.TypeCode == "2"))
-                            if (admission.Discharge.Any(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier))
+                        if (admission.Discharge != null)
+                            if (admission.Discharge.SourceRecordIdentifier == discharge.SourceRecordIdentifier)
                             {
-                                //same record so just replace it.
-                                var existingItem = admission.Discharge.Where(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier).FirstOrDefault();
-                                int id = admission.Discharge.IndexOf(existingItem);
-                                discharge.Admission = admission;
-                                discharge.AdmitSourceId = admission.SourceRecordIdentifier;
-                                admission.Discharge[id] = discharge;
+                                //same record so just replace it.    
+                                admission.Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier;
+                                admission.Discharge = discharge;
                                 return;
                             }
                             else
                             {
                                 return;
                             }
-                        discharge.Admission = admission;
-                        discharge.AdmitSourceId = admission.SourceRecordIdentifier;
-                        admission.Discharge.Add(discharge);
+                        admission.Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier;
+                        admission.Discharge = discharge;
                         return;
                     }
                 default:
@@ -130,6 +121,7 @@ namespace PAM2FASAMS
                 //same record so just replace it.
                 var existingPerf = admission.PerformanceOutcomeMeasures.Where(p => p.SourceRecordIdentifier == outcomeMeasure.SourceRecordIdentifier).FirstOrDefault();
                 int id = admission.PerformanceOutcomeMeasures.IndexOf(existingPerf);
+                outcomeMeasure.Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier;
                 admission.PerformanceOutcomeMeasures[id] = outcomeMeasure;
                 return;
             }
@@ -139,6 +131,7 @@ namespace PAM2FASAMS
                 return;
             }
             //last option
+            outcomeMeasure.Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier;
             admission.PerformanceOutcomeMeasures.Add(outcomeMeasure);
         }
         public static void ProcessPerformanceOutcomeMeasure(Discharge discharge, PerformanceOutcomeMeasure outcomeMeasure)

@@ -178,7 +178,6 @@ namespace PAM2FASAMS
                                         DaysWaitingToEnterTreatmentKnownCode = "0",
                                         PerformanceOutcomeMeasures = new List<PerformanceOutcomeMeasure>(),
                                         Diagnoses = new List<Diagnosis>(),
-                                        Discharge = new List<Discharge>()
                                     };
 
                                     PerformanceOutcomeMeasure performanceOutcomeMeasure = new PerformanceOutcomeMeasure
@@ -660,7 +659,6 @@ namespace PAM2FASAMS
                                             ToolCode = "6",
                                             EvaluationDate = evalDate,
                                             ScoreCode = score,
-                                            Admission = admission,
                                             Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
                                         };
                                         admission.Evaluations.Add(newEvaluation);
@@ -705,7 +703,6 @@ namespace PAM2FASAMS
                                             ToolCode = "6",
                                             EvaluationDate = evalDate,
                                             ScoreCode = score,
-                                            Admission = admission,
                                             Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
                                         };
                                         admission.Evaluations.Add(newEvaluation);
@@ -751,7 +748,6 @@ namespace PAM2FASAMS
                                             ToolCode = "6",
                                             EvaluationDate = evalDate,
                                             ScoreCode = score,
-                                            Discharge = discharge,
                                             Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier
                                         };
                                         discharge.Evaluations.Add(newEvaluation);

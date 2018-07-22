@@ -63,6 +63,18 @@ namespace PAM2FASAMS.OutputFormats
         public string action { get; set; }
 
         [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public DateTime InternalEvaluationDate
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(EvaluationDate))
+                {
+                    return DateTime.Parse(EvaluationDate);
+                }
+                return DateTime.Now;
+            }
+        }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
         [ForeignKey("Episode"), Column(Order = 0)]
         public string TreatmentSourceId { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
@@ -95,7 +107,7 @@ namespace PAM2FASAMS.OutputFormats
         public List<PerformanceOutcomeMeasure> PerformanceOutcomeMeasures { get; set; }
         public List<Evaluation> Evaluations { get; set; }
         public List<Diagnosis> Diagnoses { get; set; }
-        public List<Discharge> Discharge { get; set; }
+        public Discharge Discharge { get; set; }
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string action { get; set; }
 
@@ -112,10 +124,13 @@ namespace PAM2FASAMS.OutputFormats
             }
         }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
-        [ForeignKey("Episode"), Column(Order = 0)]
+        [ForeignKey("Discharge")]
+        public string Discharge_SourceRecordIdentifier { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Episode"),Column(Order = 0)]
         public string TreatmentSourceId { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
-        [ForeignKey("Episode"), Column(Order = 2)]
+        [ForeignKey("Episode"), Column(Order = 1)]
         public string FederalTaxIdentifier { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
         public virtual TreatmentEpisode Episode { get; set; }
@@ -151,6 +166,12 @@ namespace PAM2FASAMS.OutputFormats
         public Legal Legal { get; set; }
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string action { get; set; }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Admission")]
+        public string Admission_SourceRecordIdentifier { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public virtual Admission Admission { get; set; }
     }
 
     [Table(name: "Evaluations")]
@@ -745,11 +766,6 @@ namespace PAM2FASAMS.OutputFormats
                 return DateTime.Now;
             }
         }
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
-        [ForeignKey("Admission")]
-        public string AdmitSourceId { get; set; }
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
-        public virtual Admission Admission { get; set; }
     }
 
     [System.SerializableAttribute()]
