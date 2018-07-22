@@ -309,5 +309,82 @@ namespace PAM2FASAMS
             }
             return "0";
         }
+        public static string ValidateAdmissionCoDependent(string pamData)
+        {
+            switch (pamData)
+            {
+                case "1":
+                    return "0";
+                case "2":
+                    return "1";
+                case "3":
+                    return "0";
+                case "4":
+                    return "1";
+                case "5":
+                    return "1";
+                case "6":
+                    return "1";
+                default:
+                    return "0";
+            }
+        }
+        public static string ValidateAdmissionProgramCode(string type,string pamData,string evalDate)
+        {
+            DateTime dob = DateTime.Parse(pamData);
+            DateTime date = DateTime.Parse(evalDate);
+            int age = CalculateAge(dob, date);
+            if (string.Equals("SA",type, StringComparison.InvariantCultureIgnoreCase))
+            {
+                if (age < 18)
+                {
+                    return "4";
+                }
+                else
+                {
+                    return "2";
+                }
+            }
+            else
+            {
+                if (age < 18)
+                {
+                    return "3";
+                }
+                else
+                {
+                    return "1";
+                }
+            }
+        }
+        /// <summary>  
+        /// For calculating only age  
+        /// </summary>  
+        /// <param name="dateOfBirth">Date of birth</param>  
+        /// <returns> age e.g. 26</returns>  
+        private static int CalculateAge(DateTime dateOfBirth)
+        {
+            int age = 0;
+            age = DateTime.Now.Year - dateOfBirth.Year;
+            if (DateTime.Now.DayOfYear < dateOfBirth.DayOfYear)
+                age = age - 1;
+
+            return age;
+        }
+        /// <summary>  
+        /// For calculating only age  
+        /// </summary>  
+        /// <param name="dateOfBirth">Date of birth</param>
+        /// <param name="asOfDate">As of date</param>
+        /// <returns> age e.g. 26</returns>  
+        private static int CalculateAge(DateTime dateOfBirth, DateTime asOfDate)
+        {
+            int age = 0;
+            age = asOfDate.Year - dateOfBirth.Year;
+            if (asOfDate.DayOfYear < dateOfBirth.DayOfYear)
+                age = age - 1;
+
+            return age;
+        }
     }
 }

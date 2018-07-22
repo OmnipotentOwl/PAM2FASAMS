@@ -172,9 +172,9 @@ namespace PAM2FASAMS
                                         AdmissionDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value)),
                                         ReferralSourceCode = (pamRow.Where(r => r.Name == "Referral").Single().Value),
                                         TypeCode = "1",
-                                        ProgramAreaCode = "3",
-                                        TreatmentSettingCode = "todo",
-                                        IsCodependentCode = "1",
+                                        ProgramAreaCode = FASAMSValidations.ValidateAdmissionProgramCode("MH", client.BirthDate,evalDate),
+                                        TreatmentSettingCode = "todo", //not sure how to calculate this based on existing data.
+                                        IsCodependentCode = FASAMSValidations.ValidateAdmissionCoDependent(FASAMSValidations.ValidateAdmissionProgramCode("MH",client.BirthDate,evalDate)),
                                         DaysWaitingToEnterTreatmentKnownCode = "0",
                                         PerformanceOutcomeMeasures = new List<PerformanceOutcomeMeasure>(),
                                         Diagnoses = new List<Diagnosis>(),
