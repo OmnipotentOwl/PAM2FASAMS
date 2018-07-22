@@ -746,7 +746,7 @@ namespace PAM2FASAMS.OutputFormats
             }
         }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
-        [ForeignKey("Admission"), Column(Order = 0)]
+        [ForeignKey("Admission")]
         public string AdmitSourceId { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
         public virtual Admission Admission { get; set; }

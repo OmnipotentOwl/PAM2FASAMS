@@ -83,6 +83,7 @@ namespace PAM2FASAMS
                                 var existingItem = admission.Discharge.Where(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier).FirstOrDefault();
                                 int id = admission.Discharge.IndexOf(existingItem);
                                 discharge.Admission = admission;
+                                discharge.AdmitSourceId = admission.SourceRecordIdentifier;
                                 admission.Discharge[id] = discharge;
                                 return;
                             }
@@ -92,6 +93,7 @@ namespace PAM2FASAMS
                             }
 
                         discharge.Admission = admission;
+                        discharge.AdmitSourceId = admission.SourceRecordIdentifier;
                         admission.Discharge.Add(discharge);
                         return;
                     }
@@ -104,6 +106,7 @@ namespace PAM2FASAMS
                                 var existingItem = admission.Discharge.Where(d => d.SourceRecordIdentifier == discharge.SourceRecordIdentifier).FirstOrDefault();
                                 int id = admission.Discharge.IndexOf(existingItem);
                                 discharge.Admission = admission;
+                                discharge.AdmitSourceId = admission.SourceRecordIdentifier;
                                 admission.Discharge[id] = discharge;
                                 return;
                             }
@@ -112,6 +115,7 @@ namespace PAM2FASAMS
                                 return;
                             }
                         discharge.Admission = admission;
+                        discharge.AdmitSourceId = admission.SourceRecordIdentifier;
                         admission.Discharge.Add(discharge);
                         return;
                     }
@@ -291,6 +295,14 @@ namespace PAM2FASAMS
                 default:
                     return null;
             }
+        }
+        public static string ValidateDischargeReasonCode(string pamData)
+        {
+            if (!string.IsNullOrWhiteSpace(pamData))
+            {
+                //todo discharge reason logic
+            }
+            return "0";
         }
     }
 }

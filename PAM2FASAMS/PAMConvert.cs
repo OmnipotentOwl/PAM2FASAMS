@@ -473,7 +473,8 @@ namespace PAM2FASAMS
                                     discharge.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value));
                                     discharge.TypeCode = "2";
                                     discharge.DischargeDate = evalDate;
-                                    discharge.DischargeReasonCode = (pamRow.Where(r => r.Name == "DReason").Single().Value).Trim();
+                                    discharge.LastContactDate = evalDate;
+                                    discharge.DischargeReasonCode = FASAMSValidations.ValidateDischargeReasonCode((pamRow.Where(r => r.Name == "DReason").Single().Value).Trim());
                                     PerformanceOutcomeMeasure performanceOutcomeMeasure = new PerformanceOutcomeMeasure
                                     {
                                         SourceRecordIdentifier = Guid.NewGuid().ToString(),
@@ -658,7 +659,9 @@ namespace PAM2FASAMS
                                             TypeCode = "2",
                                             ToolCode = "6",
                                             EvaluationDate = evalDate,
-                                            ScoreCode = score
+                                            ScoreCode = score,
+                                            Admission = admission,
+                                            Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
                                         };
                                         admission.Evaluations.Add(newEvaluation);
                                     }
@@ -701,7 +704,9 @@ namespace PAM2FASAMS
                                             TypeCode = "2",
                                             ToolCode = "6",
                                             EvaluationDate = evalDate,
-                                            ScoreCode = score
+                                            ScoreCode = score,
+                                            Admission = admission,
+                                            Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
                                         };
                                         admission.Evaluations.Add(newEvaluation);
                                     }
@@ -745,7 +750,9 @@ namespace PAM2FASAMS
                                             TypeCode = "2",
                                             ToolCode = "6",
                                             EvaluationDate = evalDate,
-                                            ScoreCode = score
+                                            ScoreCode = score,
+                                            Discharge = discharge,
+                                            Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier
                                         };
                                         discharge.Evaluations.Add(newEvaluation);
                                     }
