@@ -563,6 +563,7 @@ namespace PAM2FASAMS
                                             BakerActRouteCode = (pamRow.Where(r => r.Name == "BakerAct").Single().Value)
                                         }
                                     };
+                                    //add dx process here
                                     FASAMSValidations.ProcessPerformanceOutcomeMeasure(discharge,performanceOutcomeMeasure);
                                     FASAMSValidations.ProcessDischarge(admission, discharge);
                                     FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
@@ -595,7 +596,35 @@ namespace PAM2FASAMS
                             case PAMValidations.UpdateType.ImDischarge:
                                 {
                                     TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    ImmediateDischarge immediateDischarge = DataTools.OpportuniticlyLoadImmediateDischarge(treatmentEpisode, type, evalDate);
+                                    immediateDischarge.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value));
+                                    immediateDischarge.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value));
+                                    immediateDischarge.EvaluationDate = evalDate;
+                                    FASAMSValidations.ProcessImmediateDischarge(treatmentEpisode, immediateDischarge);
+                                    try
+                                    {
+                                        DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        {
+                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        }
+                                    }
+                                    catch (DbEntityValidationException ex)
+                                    {
+                                        // Retrieve the error messages as a list of strings.
+                                        var errorMessages = ex.EntityValidationErrors
+                                                .SelectMany(x => x.ValidationErrors)
+                                                .Select(x => x.ErrorMessage);
 
+                                        // Join the list to a single string.
+                                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                                        // Combine the original exception message with the new one.
+                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                                        // Throw a new DbEntityValidationException with the improved exception message.
+                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                                    }
                                     break;
                                 } 
                         }
@@ -667,6 +696,10 @@ namespace PAM2FASAMS
                                     try
                                     {
                                         DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        {
+                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        }
                                     }
                                     catch (DbEntityValidationException ex)
                                     {
@@ -711,6 +744,10 @@ namespace PAM2FASAMS
                                     try
                                     {
                                         DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        {
+                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        }
                                     }
                                     catch (DbEntityValidationException ex)
                                     {
@@ -757,6 +794,10 @@ namespace PAM2FASAMS
                                     try
                                     {
                                         DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        {
+                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        }
                                     }
                                     catch (DbEntityValidationException ex)
                                     {
@@ -820,7 +861,7 @@ namespace PAM2FASAMS
                     var clientId = FASAMSValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
                     var recordDate = FASAMSValidations.ValidateFASAMSDate(pamRow.Where(r => r.Name == "ServDate").Single().Value);
                     client = DataTools.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
-                    var treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(recordDate, client.SourceRecordIdentifier, fedTaxId);
+                    var treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(PAMValidations.TreatmentEpisodeType.Admission,recordDate, client.SourceRecordIdentifier, fedTaxId);
                     var admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate);
                     if (IsDelete)
                     {

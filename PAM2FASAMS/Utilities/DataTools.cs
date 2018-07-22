@@ -19,7 +19,7 @@ namespace PAM2FASAMS.Utilities
             {
                 case UpdateType.Admission:
                     {
-                        return OpportuniticlyLoadTreatmentSession(recordDate, clientSourceRecordIdentifier, federalTaxIdentifier);
+                        return OpportuniticlyLoadTreatmentSession(TreatmentEpisodeType.Admission, recordDate, clientSourceRecordIdentifier, federalTaxIdentifier);
                     }
                 case UpdateType.Update:
                     {
@@ -29,7 +29,7 @@ namespace PAM2FASAMS.Utilities
                         }
                         else
                         {
-                            return OpportuniticlyLoadTreatmentSession(recordDate, clientSourceRecordIdentifier, federalTaxIdentifier);
+                            return OpportuniticlyLoadTreatmentSession(TreatmentEpisodeType.Admission, recordDate, clientSourceRecordIdentifier, federalTaxIdentifier);
                         }
                     }
                 case UpdateType.Discharge:
@@ -40,19 +40,27 @@ namespace PAM2FASAMS.Utilities
                         }
                         else
                         {
-                            return OpportuniticlyLoadTreatmentSession(recordDate, clientSourceRecordIdentifier, federalTaxIdentifier);
+                            return OpportuniticlyLoadTreatmentSession(TreatmentEpisodeType.Admission, recordDate, clientSourceRecordIdentifier, federalTaxIdentifier);
                         }
                     }
                 case UpdateType.ImDischarge:
                     {
-                        return null;
+                        // added a search component here as there isnt much guidence on when you should use an existing Treatment Episode vs when you should make a new one.
+                        int daysToSearch = 30; // will probably make this item configurable via a config file.
+                        DateTime lowerSearchRange = date.AddDays(-daysToSearch);
+                        DateTime upperSearchRange = date.AddDays(daysToSearch);
+                        if(currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.ImmediateDischarges.Exists(i => i.InternalEvaluationDate <= lowerSearchRange && i.InternalEvaluationDate >= upperSearchRange))))
+                        {
+                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.ImmediateDischarges.Exists(i => i.InternalEvaluationDate <= lowerSearchRange && i.InternalEvaluationDate >= upperSearchRange))).FirstOrDefault();
+                        }
+                        return OpportuniticlyLoadTreatmentSession(TreatmentEpisodeType.ImDischarge, recordDate,clientSourceRecordIdentifier, federalTaxIdentifier);
                     }
                 default:
                     return null;
             }
             
         }
-        public static TreatmentEpisode OpportuniticlyLoadTreatmentSession(string recordDate, string clientSourceRecordIdentifier, string federalTaxIdentifier)
+        public static TreatmentEpisode OpportuniticlyLoadTreatmentSession(TreatmentEpisodeType type, string recordDate, string clientSourceRecordIdentifier, string federalTaxIdentifier)
         {
             DateTime date = DateTime.Parse(recordDate);
             using(var db = new fasams_db())
@@ -63,28 +71,68 @@ namespace PAM2FASAMS.Utilities
                     .Where(c => c.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && c.FederalTaxIdentifier == federalTaxIdentifier)
                     .ToList();
 
-                if(existing == null || existing.Count==0)
+                switch (type)
                 {
-                    return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier= clientSourceRecordIdentifier, FederalTaxIdentifier= federalTaxIdentifier, Admissions = new List<Admission>() }; ;
+                    case TreatmentEpisodeType.Admission:
+                        {
+                            if (existing == null || existing.Count == 0)
+                            {
+                                return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = clientSourceRecordIdentifier, FederalTaxIdentifier = federalTaxIdentifier, Admissions = new List<Admission>() }; ;
+                            }
+                            if (existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge == null)))
+                            {
+                                return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge == null)).FirstOrDefault();
+                            }
+                            if (existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.Discharge.TypeCode == "1")))
+                            {
+                                return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.Discharge.TypeCode == "1")).FirstOrDefault();
+                            }
+                            if (existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.Discharge.TypeCode == "2")))
+                            {
+                                return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.Discharge.TypeCode == "2")).FirstOrDefault();
+                            }
+                            return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = clientSourceRecordIdentifier, FederalTaxIdentifier = federalTaxIdentifier, Admissions = new List<Admission>() }; ;
+                        }
+                    case TreatmentEpisodeType.ImDischarge:
+                        {
+                            // added a search component here as there isnt much guidence on when you should use an existing Treatment Episode vs when you should make a new one.
+                            int daysToSearch = 30; // will probably make this item configurable via a config file.
+                            DateTime lowerSearchRange = date.AddDays(-daysToSearch);
+                            DateTime upperSearchRange = date.AddDays(daysToSearch);
+                            if (existing == null || existing.Count == 0)
+                            {
+                                return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = clientSourceRecordIdentifier, FederalTaxIdentifier = federalTaxIdentifier, ImmediateDischarges = new List<ImmediateDischarge>() }; ;
+                            }
+                            if (existing.Any(t => t.ImmediateDischarges.Any(i => i.InternalEvaluationDate <= lowerSearchRange && i.InternalEvaluationDate >= upperSearchRange)))
+                            {
+                                return existing.Where(t => t.ImmediateDischarges.Any(i => i.InternalEvaluationDate <= lowerSearchRange && i.InternalEvaluationDate >= upperSearchRange)).FirstOrDefault();
+                            }
+                            return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = clientSourceRecordIdentifier, FederalTaxIdentifier = federalTaxIdentifier, ImmediateDischarges = new List<ImmediateDischarge>() }; ;
+                        }
+                    default:
+                        return null;
                 }
-                if(existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge == null)))
-                {
-                    return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge == null)).FirstOrDefault();
-                }
-                if (existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate>=date && a.Discharge.TypeCode == "1")))
-                {
-                    return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.Discharge.TypeCode == "1")).FirstOrDefault();
-                }
-                if (existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.Discharge.TypeCode=="2")))
-                {
-                    return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.Discharge.TypeCode == "2")).FirstOrDefault();
-                }
-                return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = clientSourceRecordIdentifier, FederalTaxIdentifier = federalTaxIdentifier, Admissions = new List<Admission>() }; ;
             }
         }
         public static ImmediateDischarge OpportuniticlyLoadImmediateDischarge(TreatmentEpisode episode, UpdateType type, string recordDate)
         {
             DateTime date = DateTime.Parse(recordDate);
+            switch (type)
+            {
+                case UpdateType.ImDischarge:
+                    {
+                        if(episode.ImmediateDischarges.Exists(i => i.TreatmentSourceId == episode.SourceRecordIdentifier && i.InternalEvaluationDate == date))
+                        {
+                            return episode.ImmediateDischarges.Where(i => i.TreatmentSourceId == episode.SourceRecordIdentifier && i.InternalEvaluationDate == date).SingleOrDefault();
+                        }
+                        else
+                        {
+                            return OpportuniticlyLoadImmediateDischarge(episode, recordDate);
+                        }
+                    }
+                default:
+                    return null;
+            }
         }
         public static ImmediateDischarge OpportuniticlyLoadImmediateDischarge(TreatmentEpisode episode, string recordDate)
         {
@@ -102,6 +150,7 @@ namespace PAM2FASAMS.Utilities
                 {
                     return existing.Where(i => i.InternalEvaluationDate == date).FirstOrDefault();
                 }
+                return new ImmediateDischarge { SourceRecordIdentifier = Guid.NewGuid().ToString(), TreatmentSourceId = episode.SourceRecordIdentifier };
             }
         }
         public static Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, UpdateType type, string recordDate)

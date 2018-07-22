@@ -114,6 +114,18 @@ namespace PAM2FASAMS
                     break;
             }
         }
+        public static void ProcessImmediateDischarge(TreatmentEpisode episode, ImmediateDischarge discharge)
+        {
+            if(episode.ImmediateDischarges.Any(i => i.SourceRecordIdentifier == discharge.SourceRecordIdentifier))
+            {
+                var existingItem = episode.ImmediateDischarges.Where(a => a.SourceRecordIdentifier == discharge.SourceRecordIdentifier).FirstOrDefault();
+                int id = episode.ImmediateDischarges.IndexOf(existingItem);
+                episode.ImmediateDischarges[id] = discharge;
+                return;
+            }
+            episode.ImmediateDischarges.Add(discharge);
+            return;
+        }
         public static void ProcessPerformanceOutcomeMeasure(Admission admission, PerformanceOutcomeMeasure outcomeMeasure)
         {
             if(admission.PerformanceOutcomeMeasures.Any(p => p.SourceRecordIdentifier == outcomeMeasure.SourceRecordIdentifier))

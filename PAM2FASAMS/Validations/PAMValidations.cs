@@ -16,6 +16,12 @@ namespace PAM2FASAMS
             Discharge,
             ImDischarge
         }
+        public enum TreatmentEpisodeType
+        {
+            Unknown,
+            Admission,
+            ImDischarge
+        }
         public static UpdateType ValidateEvalPurpose(FileType type, string purpose)
         {
             switch (type)
