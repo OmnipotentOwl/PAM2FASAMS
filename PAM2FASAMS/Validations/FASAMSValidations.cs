@@ -218,8 +218,8 @@ namespace PAM2FASAMS
         }
         public static void ProcessDiagnosis(Admission admission, Discharge discharge, List<Diagnosis> diagnoses, string evalDate, string dischargeType)
         {
-            var dxNoLongerPresent = (discharge.Diagnoses).Except(diagnoses).ToList();
-            var dxToAdd = diagnoses.Except(discharge.Diagnoses).ToList();
+            var dxNoLongerPresent = (admission.Diagnoses).Except(diagnoses).ToList();
+            var dxToAdd = diagnoses.Except(admission.Diagnoses).ToList();
             foreach (var diag in diagnoses)
             {
                 if (discharge.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier))
