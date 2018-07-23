@@ -694,7 +694,7 @@ namespace PAM2FASAMS
                                         updatedDx.Add(dx);
                                     }
                                     FASAMSValidations.ProcessPerformanceOutcomeMeasure(discharge,performanceOutcomeMeasure);
-                                    FASAMSValidations.ProcessDiagnosis(discharge, updatedDx, evalDate, dischargeType);
+                                    FASAMSValidations.ProcessDiagnosis(admission, discharge, updatedDx, evalDate, dischargeType);
                                     FASAMSValidations.ProcessDischarge(admission, discharge);
                                     FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
                                     try
