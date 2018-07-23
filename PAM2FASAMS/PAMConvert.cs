@@ -162,6 +162,22 @@ namespace PAM2FASAMS
                                     treatmentEpisode.FederalTaxIdentifier = fedTaxId;
                                     treatmentEpisode.ClientSourceRecordIdentifier = client.SourceRecordIdentifier;
                                     Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    if(admission.AdmissionDate == null)
+                                    {
+                                        admission.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
+                                        admission.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value));
+                                        admission.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value));
+                                        admission.ContractNumber = (pamRow.Where(r => r.Name == "ContNum1").Single().Value);
+                                        admission.AdmissionDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value));
+                                        admission.ReferralSourceCode = (pamRow.Where(r => r.Name == "Referral").Single().Value);
+                                        admission.TypeCode = "1";
+                                        admission.ProgramAreaCode = FASAMSValidations.ValidateAdmissionProgramCode("MH", client.BirthDate, evalDate);
+                                        admission.TreatmentSettingCode = "todo"; //not sure how to calculate this based on existing data.
+                                        admission.IsCodependentCode = FASAMSValidations.ValidateAdmissionCoDependent(FASAMSValidations.ValidateAdmissionProgramCode("MH", client.BirthDate, evalDate));
+                                        admission.DaysWaitingToEnterTreatmentKnownCode = "0";
+                                        admission.PerformanceOutcomeMeasures = new List<PerformanceOutcomeMeasure>();
+                                        admission.Diagnoses = new List<Diagnosis>();
+                                    }
                                     Admission newAdmission = new Admission
                                     {
                                         SourceRecordIdentifier = Guid.NewGuid().ToString(),
@@ -269,10 +285,11 @@ namespace PAM2FASAMS
                                             BakerActRouteCode = (pamRow.Where(r => r.Name == "BakerAct").Single().Value)
                                         }
                                     };
-                                    newAdmission.PerformanceOutcomeMeasures.Add(performanceOutcomeMeasure);
+                                    FASAMSValidations.ProcessPerformanceOutcomeMeasure(admission, performanceOutcomeMeasure);
+                                    List<Diagnosis> updatedDx = new List<Diagnosis>();
                                     if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "SaDiag").Single().Value))
                                     {
-                                        newAdmission.Diagnoses.Add(new Diagnosis
+                                        Diagnosis dx = new Diagnosis
                                         {
                                             SourceRecordIdentifier = Guid.NewGuid().ToString(),
                                             StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
@@ -280,11 +297,12 @@ namespace PAM2FASAMS
                                             CodeSetIdentifierCode = "2",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag").Single().Value.Trim(),
                                             StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
-                                        });
+                                        };
+                                        updatedDx.Add(dx);
                                     }
                                     if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "SaDiag10").Single().Value))
                                     {
-                                        newAdmission.Diagnoses.Add(new Diagnosis
+                                        Diagnosis dx = new Diagnosis
                                         {
                                             SourceRecordIdentifier = Guid.NewGuid().ToString(),
                                             StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
@@ -292,11 +310,12 @@ namespace PAM2FASAMS
                                             CodeSetIdentifierCode = "3",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag10").Single().Value.Trim(),
                                             StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
-                                        });
+                                        };
+                                        updatedDx.Add(dx);
                                     }
                                     if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "MhDiag").Single().Value))
                                     {
-                                        newAdmission.Diagnoses.Add(new Diagnosis
+                                        Diagnosis dx = new Diagnosis
                                         {
                                             SourceRecordIdentifier = Guid.NewGuid().ToString(),
                                             StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
@@ -304,11 +323,12 @@ namespace PAM2FASAMS
                                             CodeSetIdentifierCode = "2",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag").Single().Value.Trim(),
                                             StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
-                                        });
+                                        };
+                                        updatedDx.Add(dx);
                                     }
                                     if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "MhDiag10").Single().Value))
                                     {
-                                        newAdmission.Diagnoses.Add(new Diagnosis
+                                        Diagnosis dx = new Diagnosis
                                         {
                                             SourceRecordIdentifier = Guid.NewGuid().ToString(),
                                             StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
@@ -316,9 +336,11 @@ namespace PAM2FASAMS
                                             CodeSetIdentifierCode = "3",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag10").Single().Value.Trim(),
                                             StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
-                                        });
+                                        };
+                                        updatedDx.Add(dx);
                                     }
-                                    FASAMSValidations.ProcessAdmission(treatmentEpisode, newAdmission);
+                                    FASAMSValidations.ProcessDiagnosis(admission, updatedDx, evalDate);
+                                    FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
                                     try
                                     {
                                         DataTools.UpsertTreatmentSession(treatmentEpisode);
@@ -436,6 +458,60 @@ namespace PAM2FASAMS
                                         }
                                     };
                                     FASAMSValidations.ProcessPerformanceOutcomeMeasure(admission, performanceOutcomeMeasure);
+                                    List<Diagnosis> updatedDx = new List<Diagnosis>();
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "SaDiag").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "2",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "SaDiag10").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "3",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag10").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "MhDiag").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "2",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "MhDiag10").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "3",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag10").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    FASAMSValidations.ProcessDiagnosis(admission, updatedDx, evalDate);
                                     FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
                                     try
                                     {
@@ -465,6 +541,7 @@ namespace PAM2FASAMS
                                 }
                             case PAMValidations.UpdateType.Discharge:
                                 {
+                                    var dischargeType = pamRow.Where(r => r.Name == "Purpose").Single().Value;
                                     TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Discharge discharge = DataTools.OpportuniticlyLoadDischarge(admission, evalDate);
@@ -563,8 +640,61 @@ namespace PAM2FASAMS
                                             BakerActRouteCode = (pamRow.Where(r => r.Name == "BakerAct").Single().Value)
                                         }
                                     };
-                                    //add dx process here
+                                    List<Diagnosis> updatedDx = new List<Diagnosis>();
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "SaDiag").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "2",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "SaDiag10").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "3",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag10").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "MhDiag").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "2",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "MhDiag10").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "3",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag10").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
                                     FASAMSValidations.ProcessPerformanceOutcomeMeasure(discharge,performanceOutcomeMeasure);
+                                    FASAMSValidations.ProcessDiagnosis(discharge, updatedDx, evalDate, dischargeType);
                                     FASAMSValidations.ProcessDischarge(admission, discharge);
                                     FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
                                     try

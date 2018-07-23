@@ -936,4 +936,39 @@ namespace PAM2FASAMS.OutputFormats
         public string DrugCourtOrderedCode { get; set; }
         public string OrderingCountyAreaCode { get; set; }
     }
+
+    public class DiagnosisComparer : IEqualityComparer<Diagnosis>
+    {
+        public bool Equals(Diagnosis x, Diagnosis y)
+        {
+            //Check whether the objects are the same object.
+            if (Object.ReferenceEquals(x, y)) return true;
+
+            //Check whether any of the compared objects is null.
+            if (Object.ReferenceEquals(x, null) || Object.ReferenceEquals(y, null))
+                return false;
+
+            //Check if dx is the same
+            return x.CodeSetIdentifierCode == y.CodeSetIdentifierCode
+                && x.DiagnosisCode == y.DiagnosisCode && x.EndDate == y.EndDate;
+        }
+        public int GetHashCode(Diagnosis obj)
+        {
+            //Get hash code for the StartDate field if it is not null. 
+            //int hashStartDate = obj.StartDate == null ? 0 : obj.StartDate.GetHashCode();
+
+            //Get hash code for the CodeSetIdentifierCode field. 
+            int hashCodeSetIdentifierCode = obj.CodeSetIdentifierCode == null ? 0 : obj.CodeSetIdentifierCode.GetHashCode();
+
+            //Get hash code for the DiagnosisCode field. 
+            int hashDiagnosisCode = obj.DiagnosisCode == null ? 0 : obj.DiagnosisCode.GetHashCode();
+
+            //Get hash code for the EndDate field if it is not null. 
+            int hashEndDate = obj.EndDate == null ? 0 : obj.EndDate.GetHashCode();
+
+            //Calculate the hash code for the product. 
+            return hashCodeSetIdentifierCode ^ hashDiagnosisCode ^ hashEndDate;
+
+        }
+    }
 }

@@ -167,6 +167,103 @@ namespace PAM2FASAMS
             //last option
             discharge.PerformanceOutcomeMeasures=outcomeMeasure;
         }
+        public static void ProcessDiagnosis(Admission admission, List<Diagnosis> diagnoses, string evalDate)
+        {
+            var dxNoLongerPresent = (admission.Diagnoses).Except(diagnoses,new DiagnosisComparer()).ToList();
+            var dxToAdd = diagnoses.Except(admission.Diagnoses, new DiagnosisComparer()).ToList();
+            foreach(var diag in diagnoses)
+            {
+                if (admission.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier))
+                {
+                    //same record so just replace it.
+                    var existingDx = admission.Diagnoses.Where(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier).FirstOrDefault();
+                    int id = admission.Diagnoses.IndexOf(existingDx);
+                    diag.Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier;
+                    admission.Diagnoses[id] = diag;
+                }
+                if (admission.Diagnoses.Any(d => d.CodeSetIdentifierCode == diag.CodeSetIdentifierCode && d.DiagnosisCode == diag.DiagnosisCode && d.StartDate == diag.StartDate))
+                {
+                    var existingDx = admission.Diagnoses.Where(d => d.CodeSetIdentifierCode == diag.CodeSetIdentifierCode && d.DiagnosisCode == diag.DiagnosisCode && d.StartDate == diag.StartDate).FirstOrDefault();
+                    int id = admission.Diagnoses.IndexOf(existingDx);
+                    admission.Diagnoses[id].EndDate = diag.EndDate;
+                }
+            }
+            foreach(var diag in dxNoLongerPresent)
+            {
+                if (admission.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier))
+                {
+                    //same record so just replace it.
+                    var existingDx = admission.Diagnoses.Where(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier).FirstOrDefault();
+                    int id = admission.Diagnoses.IndexOf(existingDx);
+                    diag.Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier;
+                    diag.EndDate = evalDate;
+                    admission.Diagnoses[id] = diag;
+                }
+            }
+            foreach (var diag in dxToAdd)
+            {
+                if (admission.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier))
+                {
+                    //same record so just replace it.
+                    var existingDx = admission.Diagnoses.Where(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier).FirstOrDefault();
+                    int id = admission.Diagnoses.IndexOf(existingDx);
+                    diag.Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier;
+                    admission.Diagnoses[id] = diag;
+                    continue;
+                }
+                diag.Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier;
+                admission.Diagnoses.Add(diag);
+            }
+
+        }
+        public static void ProcessDiagnosis(Admission admission, Discharge discharge, List<Diagnosis> diagnoses, string evalDate, string dischargeType)
+        {
+            var dxNoLongerPresent = (discharge.Diagnoses).Except(diagnoses).ToList();
+            var dxToAdd = diagnoses.Except(discharge.Diagnoses).ToList();
+            foreach (var diag in diagnoses)
+            {
+                if (discharge.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier))
+                {
+                    //same record so just replace it.
+                    var existingDx = discharge.Diagnoses.Where(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier).FirstOrDefault();
+                    int id = discharge.Diagnoses.IndexOf(existingDx);
+                    diag.Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier;
+                    discharge.Diagnoses[id] = diag;
+                }
+                if (discharge.Diagnoses.Any(d => d.CodeSetIdentifierCode == diag.CodeSetIdentifierCode && d.DiagnosisCode == diag.DiagnosisCode && d.StartDate == diag.StartDate))
+                {
+                    var existingDx = discharge.Diagnoses.Where(d => d.CodeSetIdentifierCode == diag.CodeSetIdentifierCode && d.DiagnosisCode == diag.DiagnosisCode && d.StartDate == diag.StartDate).FirstOrDefault();
+                    int id = discharge.Diagnoses.IndexOf(existingDx);
+                    discharge.Diagnoses[id].EndDate = diag.EndDate;
+                }
+            }
+            foreach (var diag in dxNoLongerPresent)
+            {
+                if (admission.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier))
+                {
+                    //same record so just replace it.
+                    var existingDx = admission.Diagnoses.Where(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier).FirstOrDefault();
+                    int id = admission.Diagnoses.IndexOf(existingDx);
+                    diag.Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier; //handles linking discharge dx to admission dx record for removal
+                    diag.EndDate = evalDate;
+                    admission.Diagnoses[id] = diag;
+                }
+            }
+            foreach (var diag in dxToAdd)
+            {
+                if (discharge.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier))
+                {
+                    //same record so just replace it.
+                    var existingDx = admission.Diagnoses.Where(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier).FirstOrDefault();
+                    int id = admission.Diagnoses.IndexOf(existingDx);
+                    diag.Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier;
+                    discharge.Diagnoses[id] = diag;
+                    continue;
+                }
+                diag.Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier;
+                discharge.Diagnoses.Add(diag);
+            }
+        }
         public static string ValidateFASAMSDate(string dateRaw)
         {
             DateTime result = DateTime.ParseExact(dateRaw, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);
