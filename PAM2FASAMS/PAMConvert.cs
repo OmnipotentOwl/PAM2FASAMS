@@ -468,7 +468,7 @@ namespace PAM2FASAMS
                                             StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
                                             CodeSetIdentifierCode = "2",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag").Single().Value.Trim(),
-                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
                                         };
                                         updatedDx.Add(dx);
                                     }
@@ -481,7 +481,7 @@ namespace PAM2FASAMS
                                             StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
                                             CodeSetIdentifierCode = "3",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag10").Single().Value.Trim(),
-                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
                                         };
                                         updatedDx.Add(dx);
                                     }
@@ -494,7 +494,7 @@ namespace PAM2FASAMS
                                             StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
                                             CodeSetIdentifierCode = "2",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag").Single().Value.Trim(),
-                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
                                         };
                                         updatedDx.Add(dx);
                                     }
@@ -507,7 +507,7 @@ namespace PAM2FASAMS
                                             StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
                                             CodeSetIdentifierCode = "3",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag10").Single().Value.Trim(),
-                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
                                         };
                                         updatedDx.Add(dx);
                                     }
@@ -650,7 +650,7 @@ namespace PAM2FASAMS
                                             StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
                                             CodeSetIdentifierCode = "2",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag").Single().Value.Trim(),
-                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
                                         };
                                         updatedDx.Add(dx);
                                     }
@@ -663,7 +663,7 @@ namespace PAM2FASAMS
                                             StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
                                             CodeSetIdentifierCode = "3",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag10").Single().Value.Trim(),
-                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
                                         };
                                         updatedDx.Add(dx);
                                     }
@@ -676,7 +676,7 @@ namespace PAM2FASAMS
                                             StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
                                             CodeSetIdentifierCode = "2",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag").Single().Value.Trim(),
-                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
                                         };
                                         updatedDx.Add(dx);
                                     }
@@ -689,7 +689,7 @@ namespace PAM2FASAMS
                                             StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
                                             CodeSetIdentifierCode = "3",
                                             DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag10").Single().Value.Trim(),
-                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
                                         };
                                         updatedDx.Add(dx);
                                     }
@@ -985,6 +985,7 @@ namespace PAM2FASAMS
                     };
                     ServiceEvent service = new ServiceEvent {
                         ServiceEventCoveredServiceModifiers = new List<ServiceEventCoveredServiceModifier>(),
+                        ServiceEventHcpcsProcedureModifiers = new List<ServiceEventHcpcsProcedureModifier>(),
                         ServiceEventExpenditureModifiers = new List<ServiceEventExpenditureModifier>()
                     };
                     var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
@@ -1001,12 +1002,14 @@ namespace PAM2FASAMS
                     {
                         service.SourceRecordIdentifier = Guid.NewGuid().ToString();
                         service.TypeCode = "1";
-                        service.FederalTaxIdentifier = fedTaxId;
+                        service.FederalTaxIdentifier = fedTaxId;                   
                         service.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
+                        service.ContractNumber = null; //this may change depending on feedback from ME
+                        service.SubcontractNumber = (pamRow.Where(r => r.Name == "ContNum1").Single().Value); //this may change depending on feedback from ME
                         service.EpisodeSourceRecordIdentifier = treatmentEpisode.SourceRecordIdentifier;
                         service.AdmissionSourceRecordIdentifier = admission.SourceRecordIdentifier;
-                        service.ProgramAreaCode = (pamRow.Where(r => r.Name == "ProgType").Single().Value);
-                        service.TreatmentSettingCode = (pamRow.Where(r => r.Name == "Setting").Single().Value);
+                        service.ProgramAreaCode = FASAMSValidations.ValidateAdmissionProgramCode((pamRow.Where(r => r.Name == "ProgType").Single().Value), client.BirthDate, recordDate); //this may change depending on feedback from ME
+                        service.TreatmentSettingCode = FASAMSValidations.ValidateTreatmentSettingCodeFromCoveredServiceCode((pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value).Trim());
                         service.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
                         service.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
                         service.CoveredServiceCode = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
@@ -1016,39 +1019,38 @@ namespace PAM2FASAMS
                         service.ExpenditureOcaCode = "todo"; //todo
                         service.ServiceUnitCount = uint.Parse(pamRow.Where(r => r.Name == "Unit").Single().Value);
                         service.FundCode = (pamRow.Where(r => r.Name == "Fund").Single().Value);
-                        service.ActualPaymentRateAmount = 0; //todo
                         service.ServiceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyServ").Single().Value);
-                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier1").Single().Value))
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier1").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
                         {
-                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier1").Single().Value.Trim()
                             };
-                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
                         }
-                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier2").Single().Value))
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier2").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
                         {
-                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier2").Single().Value.Trim()
                             };
-                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
                         }
-                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier3").Single().Value))
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier3").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
                         {
-                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier3").Single().Value.Trim()
                             };
-                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
                         }
-                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier4").Single().Value))
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier4").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
                         {
-                            ServiceEventExpenditureModifier modifier = new ServiceEventExpenditureModifier
+                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier4").Single().Value.Trim()
                             };
-                            service.ServiceEventExpenditureModifiers.Add(modifier);
+                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
                         }
                     }
                     try
@@ -1104,6 +1106,7 @@ namespace PAM2FASAMS
                     ServiceEvent service = new ServiceEvent
                     {
                         ServiceEventCoveredServiceModifiers = new List<ServiceEventCoveredServiceModifier>(),
+                        ServiceEventHcpcsProcedureModifiers = new List<ServiceEventHcpcsProcedureModifier>(),
                         ServiceEventExpenditureModifiers = new List<ServiceEventExpenditureModifier>()
                     };
                     var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
@@ -1118,45 +1121,49 @@ namespace PAM2FASAMS
                         service.TypeCode = "2";
                         service.FederalTaxIdentifier = fedTaxId;
                         service.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
-                        service.ProgramAreaCode = (pamRow.Where(r => r.Name == "ProgType").Single().Value);
+                        service.ContractNumber = null; //this may change depending on feedback from ME
+                        service.SubcontractNumber = (pamRow.Where(r => r.Name == "ContNum1").Single().Value); //this may change depending on feedback from ME
+                        service.ProgramAreaCode = (pamRow.Where(r => r.Name == "ProgType").Single().Value); //this may change depending on feedback from ME
+                        service.TreatmentSettingCode = FASAMSValidations.ValidateTreatmentSettingCodeFromCoveredServiceCode((pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value).Trim());
+                        service.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
+                        service.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
                         service.CoveredServiceCode = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
                         service.HcpcsProcedureCode = (pamRow.Where(r => r.Name == "ProcCode").Single().Value);
                         service.ServiceDate = recordDate;
                         service.ServiceUnitCount = uint.Parse(pamRow.Where(r => r.Name == "Unit").Single().Value);
                         service.FundCode = (pamRow.Where(r => r.Name == "Fund").Single().Value);
-                        service.ActualPaymentRateAmount = 0; //todo
                         service.ServiceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyServ").Single().Value);
-                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier1").Single().Value))
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier1").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
                         {
-                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier1").Single().Value.Trim()
                             };
-                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
                         }
-                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier2").Single().Value))
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier2").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
                         {
-                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier2").Single().Value.Trim()
                             };
-                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
                         }
-                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier3").Single().Value))
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier3").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
                         {
-                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier3").Single().Value.Trim()
                             };
-                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
                         }
-                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier4").Single().Value))
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier4").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
                         {
-                            ServiceEventExpenditureModifier modifier = new ServiceEventExpenditureModifier
+                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
                             {
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier4").Single().Value.Trim()
                             };
-                            service.ServiceEventExpenditureModifiers.Add(modifier);
+                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
                         }
                     }
                     try

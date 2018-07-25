@@ -190,7 +190,7 @@ namespace PAM2FASAMS
             }
             foreach(var diag in dxNoLongerPresent)
             {
-                if (admission.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier))
+                if (admission.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier && d.EndDate == null))
                 {
                     //same record so just replace it.
                     var existingDx = admission.Diagnoses.Where(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier).FirstOrDefault();
@@ -218,8 +218,8 @@ namespace PAM2FASAMS
         }
         public static void ProcessDiagnosis(Admission admission, Discharge discharge, List<Diagnosis> diagnoses, string evalDate, string dischargeType)
         {
-            var dxNoLongerPresent = (admission.Diagnoses).Except(diagnoses).ToList();
-            var dxToAdd = diagnoses.Except(admission.Diagnoses).ToList();
+            var dxNoLongerPresent = (admission.Diagnoses).Except(diagnoses, new DiagnosisComparer()).ToList();
+            var dxToAdd = diagnoses.Except(admission.Diagnoses, new DiagnosisComparer()).ToList();
             foreach (var diag in diagnoses)
             {
                 if (discharge.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier))
@@ -239,7 +239,7 @@ namespace PAM2FASAMS
             }
             foreach (var diag in dxNoLongerPresent)
             {
-                if (admission.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier))
+                if (admission.Diagnoses.Any(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier && d.EndDate == null))
                 {
                     //same record so just replace it.
                     var existingDx = admission.Diagnoses.Where(d => d.SourceRecordIdentifier == diag.SourceRecordIdentifier).FirstOrDefault();
@@ -433,7 +433,7 @@ namespace PAM2FASAMS
             int age = CalculateAge(dob, date);
             if (string.Equals("SA",type, StringComparison.InvariantCultureIgnoreCase))
             {
-                if (age < 18)
+                if (age > 18)
                 {
                     return "4";
                 }
@@ -442,9 +442,9 @@ namespace PAM2FASAMS
                     return "2";
                 }
             }
-            else
+            if(string.Equals("MH", type, StringComparison.InvariantCultureIgnoreCase))
             {
-                if (age < 18)
+                if (age > 18)
                 {
                     return "3";
                 }
@@ -452,6 +452,158 @@ namespace PAM2FASAMS
                 {
                     return "1";
                 }
+            }
+            switch (type)
+            {
+                case "1":
+                    {
+                        if (age > 18)
+                        {
+                            return "3";
+                        }
+                        else
+                        {
+                            return "1";
+                        }
+                    }
+                case "2":
+                    {
+                        if (age > 18)
+                        {
+                            return "4";
+                        }
+                        else
+                        {
+                            return "2";
+                        }
+                    }
+                default:
+                    return "error";
+            }
+        }
+        public static string ValidateTreatmentSettingCodeFromCoveredServiceCode(string pamData)
+        {
+            switch (pamData)
+            {
+                case "01": //Assessment
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "02": //Case Management
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "03": //Crisis Stabilization 
+                    return "03"; //Rehabilitation/Residential - Hospital (other than Detoxification)
+
+                case "04": //Crisis Support/Emergency
+                    return "06"; //Ambulatory – Intensive outpatient
+
+                case "05": //Day Care
+                    return "97"; //Non-TEDS Tx Service Settings
+
+                case "06": //Day Treatment
+                    return "06"; //Ambulatory – Intensive outpatient
+
+                case "07": //Drop-In/Self-Help Centers
+                    return "97"; //Non-TEDS Tx Service Settings
+
+                case "08": //In-Home and On-Site Community based care
+                    return "06"; //Ambulatory – Intensive outpatient
+
+                case "09": //Inpatient 
+                    return "03"; //Rehabilitation/Residential - Hospital (other than Detoxification)
+
+                case "10": //Intensive Case Management 
+                    return "06"; //Ambulatory – Intensive outpatient
+
+                case "11": //Intervention (Individual)
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "12": //Medical Services 
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "13": //Medication Assisted Treatment
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "14": //Outpatient 
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "15": //Outreach  
+                    return "97"; //Non-TEDS Tx Service Settings
+
+                case "18": //Residential Level I
+                    return "05"; //Rehabilitation/Residential -Long term (more than 30 days)
+
+                case "19": //Residential Level II
+                    return "05"; //Rehabilitation/Residential -Long term (more than 30 days)
+
+                case "20": //Residential Level III
+                    return "05"; //Rehabilitation/Residential -Long term (more than 30 days)
+
+                case "21": //Residential Level IV
+                    return "05"; //Rehabilitation/Residential -Long term (more than 30 days)
+
+                case "22": //Respite Services
+                    return "97"; //Non-TEDS Tx Service Settings
+
+                case "24": //Substance Abuse Inpatient Detoxification
+                    return "02"; //Detoxification, 24-hour service, Free-Standing Residential
+
+                case "25": //Supportive Employment
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "26": //Supported Housing/Living
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "27": //Treatment Alternative for Safer Community
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "28": //Incidental Expenses 
+                    return "97"; //Non-TEDS Tx Service Settings
+
+                case "29": //Aftercare
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "30": //Information and Referral
+                    return "97"; //Non-TEDS Tx Service Settings
+
+                case "32": //Substance Abuse Outpatient Detoxification
+                    return "08"; //Ambulatory - Detoxification
+
+                case "36": //Room and Board with Supervision Level I
+                    return "05"; //Rehabilitation/Residential -Long term (more than 30 days)
+
+                case "37": //Room and Board with Supervision Level II
+                    return "05"; //Rehabilitation/Residential -Long term (more than 30 days)
+
+                case "38": //Room and Board with Supervision Level III
+                    return "05"; //Rehabilitation/Residential -Long term (more than 30 days)
+
+                case "39": //Short-term Residential Treatment
+                    return "04"; //Rehabilitation/Residential -Short term (30 days or fewer)
+
+                case "40": //Mental Health Clubhouse Services
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "44": //Comprehensive Community Service Team
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "46": //Recovery Support
+                    return "07"; //Ambulatory – Non-Intensive outpatient
+
+                case "48": //Indicated Prevention
+                    return "97"; //Non-TEDS Tx Service Settings
+
+                case "49": //Selective Prevention
+                    return "97"; //Non-TEDS Tx Service Settings
+
+                case "50": //Universal Direct Prevention
+                    return "97"; //Non-TEDS Tx Service Settings
+
+                case "51": //Universal Indirect Prevention
+                    return "97"; //Non-TEDS Tx Service Settings
+
+                default:
+                    return "";
             }
         }
         /// <summary>  

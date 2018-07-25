@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -64,8 +65,10 @@ namespace PAM2FASAMS.OutputFormats
         public uint ServiceUnitCount { get; set; }
         [Required]
         public string FundCode { get; set; }
+        [DefaultValue(0)]
         public decimal ActualPaymentRateAmount { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [DefaultValue(false)]
         public bool ActualPaymentRateAmountSpecified { get; set; }
         public string InvoicedDate { get; set; }
         [MaxLength(100)]
