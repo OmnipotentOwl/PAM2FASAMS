@@ -46,6 +46,11 @@ namespace PAM2FASAMS.OutputFormats
         public string ProgramAreaCode { get; set; }
         [Required]
         public string TreatmentSettingCode { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public string StaffEducationLevelCode { get; set; }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [MaxLength(100)]
+        public string StaffIdentifier { get; set; }
         [Required]
         public string CoveredServiceCode { get; set; }
         [Required]

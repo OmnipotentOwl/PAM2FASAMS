@@ -46,12 +46,12 @@ namespace PAM2FASAMS.Utilities
                 case UpdateType.ImDischarge:
                     {
                         // added a search component here as there isnt much guidence on when you should use an existing Treatment Episode vs when you should make a new one.
-                        int daysToSearch = 30; // will probably make this item configurable via a config file.
-                        DateTime lowerSearchRange = date.AddDays(-daysToSearch);
-                        DateTime upperSearchRange = date.AddDays(daysToSearch);
-                        if(currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.ImmediateDischarges.Exists(i => i.InternalEvaluationDate <= lowerSearchRange && i.InternalEvaluationDate >= upperSearchRange))))
+                        //int daysToSearch = 30; // will probably make this item configurable via a config file.
+                        //DateTime lowerSearchRange = date.AddDays(-daysToSearch);
+                        //DateTime upperSearchRange = date.AddDays(daysToSearch);
+                        if(currentJob.TreatmentEpisodes.Exists(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.ImmediateDischarges.Exists(i => i.InternalEvaluationDate == date))))
                         {
-                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.ImmediateDischarges.Exists(i => i.InternalEvaluationDate <= lowerSearchRange && i.InternalEvaluationDate >= upperSearchRange))).FirstOrDefault();
+                            return currentJob.TreatmentEpisodes.Where(e => e.ClientSourceRecordIdentifier == clientSourceRecordIdentifier && (e.ImmediateDischarges.Exists(i => i.InternalEvaluationDate == date ))).FirstOrDefault();
                         }
                         return OpportuniticlyLoadTreatmentSession(TreatmentEpisodeType.ImDischarge, recordDate,clientSourceRecordIdentifier, federalTaxIdentifier);
                     }

@@ -1007,6 +1007,8 @@ namespace PAM2FASAMS
                         service.AdmissionSourceRecordIdentifier = admission.SourceRecordIdentifier;
                         service.ProgramAreaCode = (pamRow.Where(r => r.Name == "ProgType").Single().Value);
                         service.TreatmentSettingCode = (pamRow.Where(r => r.Name == "Setting").Single().Value);
+                        service.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
+                        service.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
                         service.CoveredServiceCode = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
                         service.HcpcsProcedureCode = (pamRow.Where(r => r.Name == "ProcCode").Single().Value);
                         service.ServiceDate = recordDate;
