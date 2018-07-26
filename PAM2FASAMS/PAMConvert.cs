@@ -1150,6 +1150,11 @@ namespace PAM2FASAMS
                             };
                             service.ServiceEventCoveredServiceModifiers.Add(modifier);
                         }
+                        var setting = pamRow.Where(r => r.Name == "Setting").Single().Value;
+                        if (PAMValidations.ValidateCoverdServiceCodeLocation(service.CoveredServiceCode, setting) != null)
+                        {
+                            service.CoveredServiceCode = PAMValidations.ValidateCoverdServiceCodeLocation(service.CoveredServiceCode, setting);
+                        }
                     }
                     try
                     {

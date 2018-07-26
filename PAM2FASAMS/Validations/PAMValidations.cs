@@ -54,5 +54,20 @@ namespace PAM2FASAMS
             }
             return UpdateType.Unknown;
         }
+        public static string ValidateCoverdServiceCodeLocation(string covrdSvc, string location)
+        {
+
+            return locationMatrices.Where(l => l.CoveredService == covrdSvc && l.Location == location).SingleOrDefault()?.ValidCoveredService;
+        }
+        private class CoveredServiceLocationMatrix
+        {
+            public string CoveredService { get; set; }
+            public string Location { get; set; }
+            public string ValidCoveredService { get; set; }
+        }
+        private static List<CoveredServiceLocationMatrix> locationMatrices = new List<CoveredServiceLocationMatrix>
+        {
+            new CoveredServiceLocationMatrix(){ CoveredService ="08", Location="11", ValidCoveredService="14"},
+        };
     }
 }
