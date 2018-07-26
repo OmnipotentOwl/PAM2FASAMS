@@ -18,12 +18,75 @@ namespace PAM2FASAMS
     public class PAMConvert
     {
         #region Conversion Functions
+        public static void RunBatchJob(IEnumerable<InputFile> inputFiles, Options options)
+        {
+            ProviderClients clientDataSet = new ProviderClients { clients = new List<ProviderClient>() };
+            TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
+            ServiceEvents serviceEventsDataSet = new ServiceEvents { serviceEvents = new List<ServiceEvent>() };
+            foreach (InputFile file in inputFiles)
+            {
+                options.InputFile = options.Directory + '/' + file.FileName;
+                Console.WriteLine("File: {0}, Type: {1}", file.FileName, file.RecordType);
+                if (!File.Exists(options.InputFile))
+                {
+                    Console.WriteLine("File: {0} not found, skipping file.", file.FileName);
+                    continue;
+                }
+                switch (file.RecordType)
+                {
+                    case "IDUP":
+                        break;
+                    case "SSN":
+                        InvokeSSNConversion(clientDataSet, options.InputFile);
+                        break;
+                    case "DEMO":
+                        InvokeDemoConversion(clientDataSet, options.InputFile);
+                        break;
+                    case "SAPERFA":
+                        break;
+                    case "SAPERFD":
+                        break;
+                    case "SADT":
+                        break;
+                    case "PERF":
+                        InvokePerfConversion(treatmentEpisodeDataSet, options.InputFile);
+                        break;
+                    case "CFARS":
+                        InvokeCFARSConversion(treatmentEpisodeDataSet, options.InputFile);
+                        break;
+                    case "FARS":
+                        break;
+                    case "ASAM":
+                        break;
+                    case "SERV":
+                        InvokeServConversion(serviceEventsDataSet, options.InputFile);
+                        break;
+                    case "EVNT":
+                        InvokeEvntConversion(serviceEventsDataSet, options.InputFile);
+                        break;
+                    case "SANDR":
+                        break;
+                    default:
+                        break;
+                }
+            }
+            WriteXml(clientDataSet, null, "ClientDataSet", options.Directory);
+            WriteXml(treatmentEpisodeDataSet, null, "TreatmentEpisodeDataSet", options.Directory);
+            WriteXml(serviceEventsDataSet, null, "ServiceEventDataSet", options.Directory);
+        }
         public static void InvokeSSNConversion(string inputFile, string outputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM SSN update file..");
+            ProviderClients clientDataSet = new ProviderClients { clients = new List<ProviderClient>() };
+            InvokeSSNConversion(clientDataSet, inputFile);
+            WriteXml(clientDataSet, outputFile, "ClientDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Conversion of PAM SSN update file.");
+        }
+        public static void InvokeSSNConversion(ProviderClients clientDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SSN update file..");
             PAMMappingFile = @"InputFormats/PAM-SSN.xml";
             var pamFile = ParseFile(inputFile, PAMMappingFile);
-            ProviderClients clientDataSet = new ProviderClients { clients = new List<ProviderClient>() };
             foreach (var pamRow in pamFile)
             {
                 ProviderClient client = new ProviderClient
@@ -40,15 +103,22 @@ namespace PAM2FASAMS
                     DataTools.UpsertProviderClient(client);
                     clientDataSet.clients.Add(client);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     WriteErrorLog(ex, "ClientDataSet", Path.GetDirectoryName(inputFile));
-                }  
+                }
             }
-            WriteXml(clientDataSet, outputFile, "ClientDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM SSN update file.");
         }
         public static void InvokeDemoConversion(string inputFile, string outputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM DEMO file..");
+            ProviderClients clientDataSet = new ProviderClients { clients = new List<ProviderClient>()};
+            InvokeDemoConversion(clientDataSet, inputFile);
+            WriteXml(clientDataSet, outputFile, "ClientDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Conversion of PAM DEMO file.");
+        }
+        public static void InvokeDemoConversion(ProviderClients clientDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM DEMO file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -60,8 +130,7 @@ namespace PAM2FASAMS
             {
                 PAMMappingFile = @"InputFormats/PAM-DEMO.xml";
             }
-            var pamFile = ParseFile(inputFile,PAMMappingFile);
-            ProviderClients clientDataSet = new ProviderClients { clients = new List<ProviderClient>()};
+            var pamFile = ParseFile(inputFile, PAMMappingFile);
             foreach (var pamRow in pamFile)
             {
                 try
@@ -99,7 +168,7 @@ namespace PAM2FASAMS
                         DataTools.UpsertProviderClient(client);
                         clientDataSet.clients.Add(client);
                     }
-                    catch(DbEntityValidationException ex)
+                    catch (DbEntityValidationException ex)
                     {
                         // Retrieve the error messages as a list of strings.
                         var errorMessages = ex.EntityValidationErrors
@@ -121,10 +190,17 @@ namespace PAM2FASAMS
                     WriteErrorLog(ex, "ClientDataSet", Path.GetDirectoryName(inputFile));
                 }
             }
-            WriteXml(clientDataSet, outputFile, "ClientDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM DEMO file.");
         }
         public static void InvokePerfConversion(string inputFile, string outputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM PERF file..");
+            TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
+            InvokePerfConversion(treatmentEpisodeDataSet, inputFile);
+            WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Conversion of PAM PERF file.");
+        }
+        public static void InvokePerfConversion(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM PERF file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -137,9 +213,8 @@ namespace PAM2FASAMS
                 PAMMappingFile = @"InputFormats/PAM-PERF.xml";
             }
             var pamFile = ParseFile(inputFile, PAMMappingFile);
-            TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
             int rowNum = 1;
-            foreach(var pamRow in pamFile)
+            foreach (var pamRow in pamFile)
             {
                 try
                 {
@@ -159,10 +234,17 @@ namespace PAM2FASAMS
                             case PAMValidations.UpdateType.Admission:
                                 {
                                     TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    treatmentEpisode.FederalTaxIdentifier = fedTaxId;
-                                    treatmentEpisode.ClientSourceRecordIdentifier = client.SourceRecordIdentifier;
+                                    string programCode = FASAMSValidations.ValidateAdmissionProgramCode("MH", client.BirthDate, evalDate);
+                                    if (treatmentEpisode.Admissions != null && treatmentEpisode.Admissions.Count > 0)
+                                    {
+                                        Admission initialAdmit = treatmentEpisode.Admissions.Where(a => a.TypeCode == "1").Single();
+                                        if (initialAdmit.InternalAdmissionDate < DateTime.Parse(evalDate) && initialAdmit.ProgramAreaCode == programCode)
+                                        {
+                                            treatmentEpisode = new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = client.SourceRecordIdentifier, FederalTaxIdentifier = fedTaxId, Admissions = new List<Admission>() };
+                                        }
+                                    }
                                     Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
-                                    if(admission.AdmissionDate == null)
+                                    if (admission.AdmissionDate == null)
                                     {
                                         admission.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
                                         admission.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value));
@@ -188,9 +270,9 @@ namespace PAM2FASAMS
                                         AdmissionDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value)),
                                         ReferralSourceCode = (pamRow.Where(r => r.Name == "Referral").Single().Value),
                                         TypeCode = "1",
-                                        ProgramAreaCode = FASAMSValidations.ValidateAdmissionProgramCode("MH", client.BirthDate,evalDate),
+                                        ProgramAreaCode = FASAMSValidations.ValidateAdmissionProgramCode("MH", client.BirthDate, evalDate),
                                         TreatmentSettingCode = "todo", //not sure how to calculate this based on existing data.
-                                        IsCodependentCode = FASAMSValidations.ValidateAdmissionCoDependent(FASAMSValidations.ValidateAdmissionProgramCode("MH",client.BirthDate,evalDate)),
+                                        IsCodependentCode = FASAMSValidations.ValidateAdmissionCoDependent(FASAMSValidations.ValidateAdmissionProgramCode("MH", client.BirthDate, evalDate)),
                                         DaysWaitingToEnterTreatmentKnownCode = "0",
                                         PerformanceOutcomeMeasures = new List<PerformanceOutcomeMeasure>(),
                                         Diagnoses = new List<Diagnosis>(),
@@ -344,7 +426,10 @@ namespace PAM2FASAMS
                                     try
                                     {
                                         DataTools.UpsertTreatmentSession(treatmentEpisode);
-                                        treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        {
+                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        }
                                     }
                                     catch (DbEntityValidationException ex)
                                     {
@@ -516,7 +601,7 @@ namespace PAM2FASAMS
                                     try
                                     {
                                         DataTools.UpsertTreatmentSession(treatmentEpisode);
-                                        if(!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t=>t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
                                         {
                                             treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
                                         }
@@ -693,7 +778,7 @@ namespace PAM2FASAMS
                                         };
                                         updatedDx.Add(dx);
                                     }
-                                    FASAMSValidations.ProcessPerformanceOutcomeMeasure(discharge,performanceOutcomeMeasure);
+                                    FASAMSValidations.ProcessPerformanceOutcomeMeasure(discharge, performanceOutcomeMeasure);
                                     FASAMSValidations.ProcessDiagnosis(admission, discharge, updatedDx, evalDate, dischargeType);
                                     FASAMSValidations.ProcessDischarge(admission, discharge);
                                     FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
@@ -756,20 +841,27 @@ namespace PAM2FASAMS
                                         throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
                                     }
                                     break;
-                                } 
+                                }
                         }
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    WriteErrorLog(ex, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile),inputFile,rowNum);
+                    WriteErrorLog(ex, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
                 }
                 rowNum++;
             }
-            WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM PERF file.");
         }
         public static void InvokeCFARSConversion(string inputFile, string outputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM CFARS file..");
+            TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
+            InvokeCFARSConversion(treatmentEpisodeDataSet, inputFile);
+            WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Writing of FASAMS CFARS data.");
+        }
+        public static void InvokeCFARSConversion(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM CFARS file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -782,7 +874,6 @@ namespace PAM2FASAMS
                 PAMMappingFile = @"InputFormats/PAM-CFARS.xml";
             }
             var pamFile = ParseFile(inputFile, PAMMappingFile);
-            TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
             int rowNum = 1;
             foreach (var pamRow in pamFile)
             {
@@ -803,11 +894,11 @@ namespace PAM2FASAMS
                         {
                             case PAMValidations.UpdateType.Admission:
                                 {
-                                    TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == "6").SingleOrDefault();
                                     var score = FASAMSValidations.ValidateEvalToolScore(FileType.CFAR, pamRow);
-                                    if (evaluation == null||evaluation.ScoreCode != score)
+                                    if (evaluation == null || evaluation.ScoreCode != score)
                                     {
                                         Evaluation newEvaluation = new Evaluation
                                         {
@@ -956,10 +1047,17 @@ namespace PAM2FASAMS
                 }
                 rowNum++;
             }
-            WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM CFARS file.");
         }
         public static void InvokeServConversion(string inputFile, string outputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM SERV file..");
+            ServiceEvents serviceEventsDataSet = new ServiceEvents { serviceEvents = new List<ServiceEvent>() };
+            InvokeServConversion(serviceEventsDataSet, inputFile);
+            WriteXml(serviceEventsDataSet, outputFile, "ServiceEventDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Conversion of PAM SERV file.");
+        }
+        public static void InvokeServConversion(ServiceEvents serviceEventsDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SERV file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -974,7 +1072,6 @@ namespace PAM2FASAMS
             }
             var pamFile = ParseFile(inputFile, PAMMappingFile);
             int rowNum = 1;
-            ServiceEvents serviceEventsDataSet = new ServiceEvents { serviceEvents = new List<ServiceEvent>() };
             foreach (var pamRow in pamFile)
             {
                 try
@@ -983,7 +1080,8 @@ namespace PAM2FASAMS
                     {
                         ProviderClientIdentifiers = new List<ProviderClientIdentifier>()
                     };
-                    ServiceEvent service = new ServiceEvent {
+                    ServiceEvent service = new ServiceEvent
+                    {
                         ServiceEventCoveredServiceModifiers = new List<ServiceEventCoveredServiceModifier>(),
                         ServiceEventHcpcsProcedureModifiers = new List<ServiceEventHcpcsProcedureModifier>(),
                         ServiceEventExpenditureModifiers = new List<ServiceEventExpenditureModifier>()
@@ -992,7 +1090,7 @@ namespace PAM2FASAMS
                     var clientId = FASAMSValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
                     var recordDate = FASAMSValidations.ValidateFASAMSDate(pamRow.Where(r => r.Name == "ServDate").Single().Value);
                     client = DataTools.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
-                    var treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(PAMValidations.TreatmentEpisodeType.Admission,recordDate, client.SourceRecordIdentifier, fedTaxId);
+                    var treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(PAMValidations.TreatmentEpisodeType.Admission, recordDate, client.SourceRecordIdentifier, fedTaxId);
                     var admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate);
                     if (IsDelete)
                     {
@@ -1002,7 +1100,7 @@ namespace PAM2FASAMS
                     {
                         service.SourceRecordIdentifier = Guid.NewGuid().ToString();
                         service.TypeCode = "1";
-                        service.FederalTaxIdentifier = fedTaxId;                   
+                        service.FederalTaxIdentifier = fedTaxId;
                         service.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
                         service.ContractNumber = null; //this may change depending on feedback from ME
                         service.SubcontractNumber = (pamRow.Where(r => r.Name == "ContNum1").Single().Value); //this may change depending on feedback from ME
@@ -1075,16 +1173,23 @@ namespace PAM2FASAMS
                         throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     WriteErrorLog(ex, "ServiceEventDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
                 }
                 rowNum++;
             }
-            WriteXml(serviceEventsDataSet, outputFile, "ServiceEventDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM SERV file.");
         }
         public static void InvokeEvntConversion(string inputFile, string outputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM EVNT file..");           
+            ServiceEvents serviceEventsDataSet = new ServiceEvents { serviceEvents = new List<ServiceEvent>() };
+            InvokeEvntConversion(serviceEventsDataSet, inputFile);
+            WriteXml(serviceEventsDataSet, outputFile, "ServiceEventDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Conversion of PAM EVNT file.");
+        }
+        public static void InvokeEvntConversion(ServiceEvents serviceEventsDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM EVNT file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -1098,7 +1203,6 @@ namespace PAM2FASAMS
             }
             var pamFile = ParseFile(inputFile, PAMMappingFile);
             int rowNum = 1;
-            ServiceEvents serviceEventsDataSet = new ServiceEvents { serviceEvents = new List<ServiceEvent>() };
             foreach (var pamRow in pamFile)
             {
                 try
@@ -1194,7 +1298,6 @@ namespace PAM2FASAMS
                 }
                 rowNum++;
             }
-            WriteXml(serviceEventsDataSet, outputFile, "ServiceEventDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM EVNT file.");
         }
         #endregion

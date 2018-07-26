@@ -33,53 +33,7 @@ namespace PAM2FASAMS
                 options.Directory = Path.GetFullPath(options.Directory);
                 IEnumerable<InputFile> inputFiles = FileMapping.GetFileMapping().OrderBy(i => i.Sequence);
                 Console.WriteLine("Beginning batch execution");
-                foreach(InputFile file in inputFiles)
-                {
-                    options.InputFile = options.Directory +'/'+ file.FileName;
-                    Console.WriteLine("File: {0}, Type: {1}", file.FileName, file.RecordType);
-                    if (!File.Exists(options.InputFile))
-                    {
-                        Console.WriteLine("File: {0} not found, skipping file.", file.FileName);
-                        continue;
-                    }
-                    switch (file.RecordType)
-                    {
-                        case "IDUP":
-                            break;
-                        case "SSN":
-                            PAMConvert.InvokeSSNConversion(options.InputFile, options.OutputFile);
-                            break;
-                        case "DEMO":
-                            PAMConvert.InvokeDemoConversion(options.InputFile, options.OutputFile);
-                            break;
-                        case "SAPERFA":
-                            break;
-                        case "SAPERFD":
-                            break;
-                        case "SADT":
-                            break;
-                        case "PERF":
-                            PAMConvert.InvokePerfConversion(options.InputFile, options.OutputFile);
-                            break;
-                        case "CFARS":
-                            PAMConvert.InvokeCFARSConversion(options.InputFile, options.OutputFile);
-                            break;
-                        case "FARS":
-                            break;
-                        case "ASAM":
-                            break;
-                        case "SERV":
-                            PAMConvert.InvokeServConversion(options.InputFile, options.OutputFile);
-                            break;
-                        case "EVNT":
-                            PAMConvert.InvokeEvntConversion(options.InputFile, options.OutputFile);
-                            break;
-                        case "SANDR":
-                            break;
-                        default:
-                            break;
-                    }
-                }
+                PAMConvert.RunBatchJob(inputFiles, options);
                 Console.WriteLine("Batch execution completed!");
             }
             else
