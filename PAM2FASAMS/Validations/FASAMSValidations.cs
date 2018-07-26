@@ -433,7 +433,7 @@ namespace PAM2FASAMS
             int age = CalculateAge(dob, date);
             if (string.Equals("SA",type, StringComparison.InvariantCultureIgnoreCase))
             {
-                if (age > 18)
+                if (age < 18)
                 {
                     return "4";
                 }
@@ -444,7 +444,7 @@ namespace PAM2FASAMS
             }
             if(string.Equals("MH", type, StringComparison.InvariantCultureIgnoreCase))
             {
-                if (age > 18)
+                if (age < 18)
                 {
                     return "3";
                 }
@@ -457,7 +457,7 @@ namespace PAM2FASAMS
             {
                 case "1":
                     {
-                        if (age > 18)
+                        if (age < 18)
                         {
                             return "3";
                         }
@@ -468,7 +468,7 @@ namespace PAM2FASAMS
                     }
                 case "2":
                     {
-                        if (age > 18)
+                        if (age < 18)
                         {
                             return "4";
                         }
