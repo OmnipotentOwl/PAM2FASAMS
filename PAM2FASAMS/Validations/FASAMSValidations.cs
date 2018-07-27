@@ -613,8 +613,9 @@ namespace PAM2FASAMS
             {
                 if(subcontract.SubcontractServices != null && subcontract.SubcontractServices.Count > 0)
                 {
-                    return subcontract.SubcontractServices.Where(s => s.CoveredServiceCode == coveredService && s.ProgramAreaCode == progCode 
-                    && s.InternalEffectiveDate<= date && s.InternalExpirationDate>= date).LastOrDefault()?.ExpenditureOcaCode;
+                    var result = subcontract.SubcontractServices.Where(s => s.CoveredServiceCode == coveredService && s.ProgramAreaCode == progCode
+                     && s.InternalEffectiveDate <= date && s.InternalExpirationDate >= date).LastOrDefault();
+                    return (result!=null) ? result.ExpenditureOcaCode : "OCA Not in Contract";
                 }
             }
             return "ContractError";

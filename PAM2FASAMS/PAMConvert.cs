@@ -235,6 +235,8 @@ namespace PAM2FASAMS
                                 {
                                     TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     string programCode = FASAMSValidations.ValidateAdmissionProgramCode("MH", client.BirthDate, evalDate);
+                                    string subContNum = (pamRow.Where(r => r.Name == "ContNum1").Single().Value);
+                                    var contract = DataTools.OpportuniticlyLoadSubcontract(subContNum, evalDate, fedTaxId);
                                     if (treatmentEpisode.Admissions != null && treatmentEpisode.Admissions.Count > 0)
                                     {
                                         Admission initialAdmit = treatmentEpisode.Admissions.Where(a => a.TypeCode == "1").Single();
@@ -249,7 +251,8 @@ namespace PAM2FASAMS
                                         admission.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
                                         admission.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value));
                                         admission.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value));
-                                        admission.ContractNumber = (pamRow.Where(r => r.Name == "ContNum1").Single().Value);
+                                        admission.ContractNumber = contract?.ContractNumber; //subject to change based on ME feedback.
+                                        admission.SubcontractNumber = contract?.SubcontractNumber; //subject to change based on ME feedback.
                                         admission.AdmissionDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value));
                                         admission.ReferralSourceCode = (pamRow.Where(r => r.Name == "Referral").Single().Value);
                                         admission.TypeCode = "1";
@@ -1092,7 +1095,7 @@ namespace PAM2FASAMS
                     client = DataTools.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
                     var treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(PAMValidations.TreatmentEpisodeType.Admission, recordDate, client.SourceRecordIdentifier, fedTaxId);
                     var admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate);
-                    var contract = DataTools.OpportuniticlyLoadSubcontract(recordDate, fedTaxId);
+                    
                     if (IsDelete)
                     {
 
@@ -1103,11 +1106,13 @@ namespace PAM2FASAMS
                         string covrdSvc = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
                         string contNum = null; //this may change depending on feedback from ME
                         string subcontNum = (pamRow.Where(r => r.Name == "ContNum1").Single().Value); //this may change depending on feedback from ME
+                        var setting = pamRow.Where(r => r.Name == "Setting").Single().Value;
+                        var contract = DataTools.OpportuniticlyLoadSubcontract(subcontNum, recordDate, fedTaxId);
                         service.SourceRecordIdentifier = Guid.NewGuid().ToString();
                         service.TypeCode = "1";
                         service.FederalTaxIdentifier = fedTaxId;
                         service.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
-                        service.ContractNumber = contNum;
+                        service.ContractNumber = contract?.ContractNumber;
                         service.SubcontractNumber = subcontNum;
                         service.EpisodeSourceRecordIdentifier = treatmentEpisode.SourceRecordIdentifier;
                         service.AdmissionSourceRecordIdentifier = admission.SourceRecordIdentifier;
@@ -1116,10 +1121,14 @@ namespace PAM2FASAMS
                         service.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
                         service.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
                         service.CoveredServiceCode = covrdSvc;
+                        if (PAMValidations.ValidateCoverdServiceCodeLocation(covrdSvc, setting) != null)
+                        {
+                            service.CoveredServiceCode = PAMValidations.ValidateCoverdServiceCodeLocation(covrdSvc, setting);
+                        }
                         service.HcpcsProcedureCode = (pamRow.Where(r => r.Name == "ProcCode").Single().Value);
                         service.ServiceDate = recordDate;
                         service.StartTime = (pamRow.Where(r => r.Name == "BeginTime").Single().Value).Trim();
-                        service.ExpenditureOcaCode = FASAMSValidations.ValidateExpenditureOcaCodeFromContract(contract, recordDate, covrdSvc, progCode);
+                        service.ExpenditureOcaCode = FASAMSValidations.ValidateExpenditureOcaCodeFromContract(contract, recordDate, service.CoveredServiceCode, progCode);
                         service.ServiceUnitCount = uint.Parse(pamRow.Where(r => r.Name == "Unit").Single().Value);
                         service.FundCode = (pamRow.Where(r => r.Name == "Fund").Single().Value);
                         service.ServiceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyServ").Single().Value);
@@ -1154,11 +1163,6 @@ namespace PAM2FASAMS
                                 ModifierCode = pamRow.Where(r => r.Name == "Modifier4").Single().Value.Trim()
                             };
                             service.ServiceEventCoveredServiceModifiers.Add(modifier);
-                        }
-                        var setting = pamRow.Where(r => r.Name == "Setting").Single().Value;
-                        if (PAMValidations.ValidateCoverdServiceCodeLocation(service.CoveredServiceCode, setting) != null)
-                        {
-                            service.CoveredServiceCode = PAMValidations.ValidateCoverdServiceCodeLocation(service.CoveredServiceCode, setting);
                         }
                     }
                     try

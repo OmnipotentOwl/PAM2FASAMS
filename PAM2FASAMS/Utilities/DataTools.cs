@@ -343,11 +343,42 @@ namespace PAM2FASAMS.Utilities
                 {
                     throw new InvalidOperationException("Missing Contract Data, please add contract information to DB!");
                 }
-                if (existing.Any(c => c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date && c.InternalAmendmentDate <= date))
+                if (existing.Any(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date) && c.TypeCode == "2" && c.InternalAmendmentDate <= date))
                 {
-                    return existing.Where(c => c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date && c.InternalAmendmentDate <= date).LastOrDefault();
+                    return existing.Where(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date) && c.TypeCode == "2" && c.InternalAmendmentDate <= date).LastOrDefault();
                 }
-                return null;
+                if (existing.Any(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date) && c.TypeCode == "1"))
+                {
+                    return existing.Where(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date) && c.TypeCode == "1").LastOrDefault();
+                }
+                return OpportuniticlyLoadSubcontract(subcontractNum,recordDate,FederalTaxIdentifier);
+            }
+        }
+        public static Subcontract OpportuniticlyLoadSubcontract(string subcontractNum, string recordDate, string FederalTaxIdentifier)
+        {
+            DateTime date = DateTime.Parse(recordDate);
+            using (var db = new fasams_db())
+            {
+                List<Subcontract> existing = db.Subcontracts
+                    .Include(x => x.SubcontractServices)
+                    .Include(x => x.SubcontractOutputMeasures)
+                    .Include(x => x.SubcontractOutcomeMeasures)
+                    .Where(c => c.FederalTaxIdentifier == FederalTaxIdentifier && c.SubcontractNumber == subcontractNum)
+                    .ToList();
+
+                if (existing == null || existing.Count == 0)
+                {
+                    throw new InvalidOperationException("Missing Contract Data, please add contract information to DB!");
+                }
+                if (existing.Any(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date ) && c.TypeCode == "2" && c.InternalAmendmentDate <= date))
+                {
+                    return existing.Where(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date) && c.TypeCode == "2" && c.InternalAmendmentDate <= date).LastOrDefault();
+                }
+                if (existing.Any(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date) && c.TypeCode == "1"))
+                {
+                    return existing.Where(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date) && c.TypeCode == "1").LastOrDefault();
+                }
+                return OpportuniticlyLoadSubcontract(recordDate,FederalTaxIdentifier);
             }
         }
         public static Subcontract OpportuniticlyLoadSubcontract(string recordDate, string FederalTaxIdentifier)
@@ -366,9 +397,13 @@ namespace PAM2FASAMS.Utilities
                 {
                     throw new InvalidOperationException("Missing Contract Data, please add contract information to DB!");
                 }
-                if(existing.Any(c => c.InternalEffectiveDate<=date && c.InternalExpirationDate >= date && c.InternalAmendmentDate <= date))
+                if (existing.Any(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date) && c.TypeCode == "2" && c.InternalAmendmentDate <= date))
                 {
-                    return existing.Where(c => c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date && c.InternalAmendmentDate <= date).LastOrDefault();
+                    return existing.Where(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date) && c.TypeCode == "2" && c.InternalAmendmentDate <= date).LastOrDefault();
+                }
+                if (existing.Any(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date) && c.TypeCode == "1"))
+                {
+                    return existing.Where(c => (c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date) && c.TypeCode == "1").LastOrDefault();
                 }
                 return null;
             }
