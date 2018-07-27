@@ -606,6 +606,19 @@ namespace PAM2FASAMS
                     return "";
             }
         }
+        public static string ValidateExpenditureOcaCodeFromContract(Subcontract subcontract, string recordDate, string coveredService, string progCode)
+        {
+            DateTime date = DateTime.Parse(recordDate);
+            if (subcontract != null)
+            {
+                if(subcontract.SubcontractServices != null && subcontract.SubcontractServices.Count > 0)
+                {
+                    return subcontract.SubcontractServices.Where(s => s.CoveredServiceCode == coveredService && s.ProgramAreaCode == progCode 
+                    && s.InternalEffectiveDate<= date && s.InternalExpirationDate>= date).LastOrDefault()?.ExpenditureOcaCode;
+                }
+            }
+            return "ContractError";
+        }
         /// <summary>  
         /// For calculating only age  
         /// </summary>  

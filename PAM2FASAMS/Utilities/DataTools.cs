@@ -327,6 +327,52 @@ namespace PAM2FASAMS.Utilities
             }
             
         }
+        public static Subcontract OpportuniticlyLoadSubcontract(string contractNum, string subcontractNum, string recordDate, string FederalTaxIdentifier)
+        {
+            DateTime date = DateTime.Parse(recordDate);
+            using (var db = new fasams_db())
+            {
+                List<Subcontract> existing = db.Subcontracts
+                    .Include(x => x.SubcontractServices)
+                    .Include(x => x.SubcontractOutputMeasures)
+                    .Include(x => x.SubcontractOutcomeMeasures)
+                    .Where(c => c.FederalTaxIdentifier == FederalTaxIdentifier && c.ContractNumber == contractNum && c.SubcontractNumber == subcontractNum)
+                    .ToList();
+
+                if (existing == null || existing.Count == 0)
+                {
+                    throw new InvalidOperationException("Missing Contract Data, please add contract information to DB!");
+                }
+                if (existing.Any(c => c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date && c.InternalAmendmentDate <= date))
+                {
+                    return existing.Where(c => c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date && c.InternalAmendmentDate <= date).LastOrDefault();
+                }
+                return null;
+            }
+        }
+        public static Subcontract OpportuniticlyLoadSubcontract(string recordDate, string FederalTaxIdentifier)
+        {
+            DateTime date = DateTime.Parse(recordDate);
+            using (var db = new fasams_db())
+            {
+                List<Subcontract> existing = db.Subcontracts
+                    .Include(x => x.SubcontractServices)
+                    .Include(x => x.SubcontractOutputMeasures)
+                    .Include(x => x.SubcontractOutcomeMeasures)
+                    .Where(c => c.FederalTaxIdentifier == FederalTaxIdentifier)
+                    .ToList();
+
+                if(existing == null || existing.Count == 0)
+                {
+                    throw new InvalidOperationException("Missing Contract Data, please add contract information to DB!");
+                }
+                if(existing.Any(c => c.InternalEffectiveDate<=date && c.InternalExpirationDate >= date && c.InternalAmendmentDate <= date))
+                {
+                    return existing.Where(c => c.InternalEffectiveDate <= date && c.InternalExpirationDate >= date && c.InternalAmendmentDate <= date).LastOrDefault();
+                }
+                return null;
+            }
+        }
         public static void UpsertProviderClient(ProviderClient providerClient)
         {
             using(var db = new fasams_db())
@@ -622,6 +668,53 @@ namespace PAM2FASAMS.Utilities
                 else
                 {
                     db.Entry(existing).CurrentValues.SetValues(subcontract);
+                    if (subcontract.SubcontractServices != null)
+                    {
+                        foreach (var row in subcontract.SubcontractServices)
+                        {
+                            var exRow = db.SubcontractServices.Find(row.SourceRecordIdentifier);
+                            if (exRow != null)
+                            {
+                                db.Entry(exRow).CurrentValues.SetValues(row);
+                            }
+                            else
+                            {
+                                db.SubcontractServices.Add(row);
+                            }
+                        }
+                        
+                    }
+                    if (subcontract.SubcontractOutputMeasures != null)
+                    {
+                        foreach (var row in subcontract.SubcontractOutputMeasures)
+                        {
+                            var exRow = db.SubcontractOutputMeasures.Find(row.ProgramAreaCode,row.ServiceCategoryCode, row.ContractNumber,row.SubcontractNumber, row.AmendmentNumber);
+                            if (exRow != null)
+                            {
+                                db.Entry(exRow).CurrentValues.SetValues(row);
+                            }
+                            else
+                            {
+                                db.SubcontractOutputMeasures.Add(row);
+                            }
+                        }
+                        
+                    }
+                    if (subcontract.SubcontractOutcomeMeasures != null)
+                    {
+                        foreach (var row in subcontract.SubcontractOutcomeMeasures)
+                        {
+                            var exRow = db.SubcontractOutcomeMeasures.Find(row.ProgramAreaCode, row.OutcomeMeasureCode, row.ContractNumber, row.SubcontractNumber, row.AmendmentNumber);
+                            if (exRow != null)
+                            {
+                                db.Entry(exRow).CurrentValues.SetValues(row);
+                            }
+                            else
+                            {
+                                db.SubcontractOutcomeMeasures.Add(row);
+                            }
+                        }
+                    }
                 }
                 db.SaveChanges();
             }

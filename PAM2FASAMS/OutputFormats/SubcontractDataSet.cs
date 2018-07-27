@@ -9,8 +9,9 @@ using System.Threading.Tasks;
 
 namespace PAM2FASAMS.OutputFormats
 {
-    class SubcontractDataSet
+    public class SubcontractDataSet
     {
+
     }
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
@@ -55,6 +56,44 @@ namespace PAM2FASAMS.OutputFormats
         public List<SubcontractOutcomeMeasure> SubcontractOutcomeMeasures { get; set; }
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string action { get; set; }
+
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public DateTime InternalEffectiveDate
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(EffectiveDate))
+                {
+                    return DateTime.Parse(EffectiveDate);
+                }
+                return DateTime.Now;
+            }
+        }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public DateTime InternalExpirationDate
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(ExpirationDate))
+                {
+                    return DateTime.Parse(ExpirationDate);
+                }
+                return DateTime.Now;
+            }
+        }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public DateTime InternalAmendmentDate
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(AmendmentDate))
+                {
+                    return DateTime.Parse(AmendmentDate);
+                }
+                return DateTime.Now;
+            }
+        }
     }
 
     [System.SerializableAttribute()]
@@ -88,13 +127,38 @@ namespace PAM2FASAMS.OutputFormats
         public string action { get; set; }
 
         [System.Xml.Serialization.XmlIgnoreAttribute()]
-        [ForeignKey("Subcontract"), Column(Order = 0)]
+        public DateTime InternalEffectiveDate
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(EffectiveDate))
+                {
+                    return DateTime.Parse(EffectiveDate);
+                }
+                return DateTime.Now;
+            }
+        }
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public DateTime InternalExpirationDate
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(ExpirationDate))
+                {
+                    return DateTime.Parse(ExpirationDate);
+                }
+                return DateTime.Now;
+            }
+        }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [ForeignKey("Subcontract"), Column(Order = 1)]
         public string ContractNumber { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
         [ForeignKey("Subcontract"), Column(Order = 2)]
         public string SubcontractNumber { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
-        [ForeignKey("Subcontract"), Column(Order = 1)]
+        [ForeignKey("Subcontract"), Column(Order = 3)]
         public string AmendmentNumber { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
         public virtual Subcontract Subcontract { get; set; }

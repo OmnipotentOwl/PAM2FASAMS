@@ -1092,29 +1092,34 @@ namespace PAM2FASAMS
                     client = DataTools.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
                     var treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(PAMValidations.TreatmentEpisodeType.Admission, recordDate, client.SourceRecordIdentifier, fedTaxId);
                     var admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate);
+                    var contract = DataTools.OpportuniticlyLoadSubcontract(recordDate, fedTaxId);
                     if (IsDelete)
                     {
 
                     }
                     else
                     {
+                        string progCode = FASAMSValidations.ValidateAdmissionProgramCode((pamRow.Where(r => r.Name == "ProgType").Single().Value), client.BirthDate, recordDate); //this may change depending on feedback from ME
+                        string covrdSvc = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
+                        string contNum = null; //this may change depending on feedback from ME
+                        string subcontNum = (pamRow.Where(r => r.Name == "ContNum1").Single().Value); //this may change depending on feedback from ME
                         service.SourceRecordIdentifier = Guid.NewGuid().ToString();
                         service.TypeCode = "1";
                         service.FederalTaxIdentifier = fedTaxId;
                         service.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
-                        service.ContractNumber = null; //this may change depending on feedback from ME
-                        service.SubcontractNumber = (pamRow.Where(r => r.Name == "ContNum1").Single().Value); //this may change depending on feedback from ME
+                        service.ContractNumber = contNum;
+                        service.SubcontractNumber = subcontNum;
                         service.EpisodeSourceRecordIdentifier = treatmentEpisode.SourceRecordIdentifier;
                         service.AdmissionSourceRecordIdentifier = admission.SourceRecordIdentifier;
-                        service.ProgramAreaCode = FASAMSValidations.ValidateAdmissionProgramCode((pamRow.Where(r => r.Name == "ProgType").Single().Value), client.BirthDate, recordDate); //this may change depending on feedback from ME
+                        service.ProgramAreaCode = progCode;
                         service.TreatmentSettingCode = FASAMSValidations.ValidateTreatmentSettingCodeFromCoveredServiceCode((pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value).Trim());
                         service.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
                         service.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
-                        service.CoveredServiceCode = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
+                        service.CoveredServiceCode = covrdSvc;
                         service.HcpcsProcedureCode = (pamRow.Where(r => r.Name == "ProcCode").Single().Value);
                         service.ServiceDate = recordDate;
                         service.StartTime = (pamRow.Where(r => r.Name == "BeginTime").Single().Value).Trim();
-                        service.ExpenditureOcaCode = "todo"; //todo
+                        service.ExpenditureOcaCode = FASAMSValidations.ValidateExpenditureOcaCodeFromContract(contract, recordDate, covrdSvc, progCode);
                         service.ServiceUnitCount = uint.Parse(pamRow.Where(r => r.Name == "Unit").Single().Value);
                         service.FundCode = (pamRow.Where(r => r.Name == "Fund").Single().Value);
                         service.ServiceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyServ").Single().Value);

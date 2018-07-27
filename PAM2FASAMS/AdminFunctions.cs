@@ -27,10 +27,11 @@ namespace PAM2FASAMS
             FileInfo[] files = d.GetFiles();
             foreach (FileInfo file in files)
             {
-                Console.WriteLine("Loading file: {0}", file.Name);
+                
                 switch (file.Name)
                 {
                     case "Contract.xml":
+                        Console.WriteLine("Loading file: {0}", file.Name);
                         LoadContractFile(file);
                         break;
                 }

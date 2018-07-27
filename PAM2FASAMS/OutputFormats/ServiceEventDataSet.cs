@@ -84,6 +84,19 @@ namespace PAM2FASAMS.OutputFormats
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string action { get; set; }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public DateTime InternalServiceDate
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(ServiceDate))
+                {
+                    return DateTime.Parse(ServiceDate);
+                }
+                return DateTime.Now;
+            }
+        }
     }
 
     [System.SerializableAttribute()]
