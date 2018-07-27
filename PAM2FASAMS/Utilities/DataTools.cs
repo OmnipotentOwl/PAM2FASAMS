@@ -575,5 +575,56 @@ namespace PAM2FASAMS.Utilities
                 db.SaveChanges();
             }
         }
+        public static void UpsertSubContract(Subcontract subcontract)
+        {
+            using(var db = new fasams_db())
+            {
+                Subcontract existing = db.Subcontracts
+                    .Include(x => x.SubcontractServices)
+                    .Include(x => x.SubcontractOutputMeasures)
+                    .Include(x => x.SubcontractOutcomeMeasures)
+                    .SingleOrDefault(s => s.ContractNumber == subcontract.ContractNumber && s.SubcontractNumber == subcontract.SubcontractNumber && s.AmendmentNumber == subcontract.AmendmentNumber);
+
+                if (existing == null)
+                {
+                    db.Subcontracts.Add(subcontract);
+                    if(subcontract.SubcontractServices != null)
+                    {
+                        foreach(var row in subcontract.SubcontractServices)
+                        {
+                            row.ContractNumber = subcontract.ContractNumber;
+                            row.SubcontractNumber = subcontract.SubcontractNumber;
+                            row.AmendmentNumber = subcontract.AmendmentNumber;
+                            db.SubcontractServices.Add(row);
+                        }
+                    }
+                    if (subcontract.SubcontractOutputMeasures != null)
+                    {
+                        foreach (var row in subcontract.SubcontractOutputMeasures)
+                        {
+                            row.ContractNumber = subcontract.ContractNumber;
+                            row.SubcontractNumber = subcontract.SubcontractNumber;
+                            row.AmendmentNumber = subcontract.AmendmentNumber;
+                            db.SubcontractOutputMeasures.Add(row);
+                        }
+                    }
+                    if (subcontract.SubcontractOutcomeMeasures != null)
+                    {
+                        foreach (var row in subcontract.SubcontractOutcomeMeasures)
+                        {
+                            row.ContractNumber = subcontract.ContractNumber;
+                            row.SubcontractNumber = subcontract.SubcontractNumber;
+                            row.AmendmentNumber = subcontract.AmendmentNumber;
+                            db.SubcontractOutcomeMeasures.Add(row);
+                        }
+                    }
+                }
+                else
+                {
+                    db.Entry(existing).CurrentValues.SetValues(subcontract);
+                }
+                db.SaveChanges();
+            }
+        }
     }
 }

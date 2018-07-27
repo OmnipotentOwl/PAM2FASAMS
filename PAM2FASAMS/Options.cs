@@ -24,7 +24,13 @@ namespace PAM2FASAMS
         EVNT,
         SANDR
     }
-
+    public enum AdminTask
+    {
+        DUMP_DB,
+        LOAD_DB,
+        LOAD_FILE
+    }
+    [Verb("run",HelpText ="Executes standard operation mode.")]
     public class Options
     {
         [Option('b', "batch", Default = false, Required = false, HelpText = "Run utility in batch mode for a directory")]
@@ -46,5 +52,19 @@ namespace PAM2FASAMS
         [Option(Default = false, HelpText = "Prints all messages to standard output.")]
         public bool Verbose { get; set; }
 
+    }
+    [Verb("admin", HelpText ="Run administrative functions.")]
+    public class AdminOptions
+    {
+
+        [Option('d', "directory", Required = true, HelpText = "Directory for operation")]
+        public string Directory { get; set; }
+
+        [Option('t', "type", Required = true, HelpText = "Administrative task type")]
+        public AdminTask Type { get; set; }
+
+        // Omitting long name, defaults to name of property, ie "--verbose"
+        [Option(Default = false, HelpText = "Prints all messages to standard output.")]
+        public bool Verbose { get; set; }
     }
 }

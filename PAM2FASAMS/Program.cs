@@ -5,23 +5,24 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PAM2FASAMS
 {
     class Program
     {
         
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
             Init();
-            Parser.Default.ParseArguments<Options>(args)
-                .WithParsed<Options>(opts => RunOptionsAndReturnExitCode(opts))
-                .WithNotParsed<Options>((errs) => HandleParseError(errs));
+            var parser = new Parser(config => config.HelpWriter = Console.Out);
+            return parser.ParseArguments<Options, AdminOptions>(args)
+                .MapResult(
+                    (Options opts) => RunOptionsAndReturnExitCode(opts),
+                    (AdminOptions opts) => RunAdminOptionsAndReturnExitCode(opts),
+                    errors => 1);
         }
 
-        static void RunOptionsAndReturnExitCode(Options options)
+        static int RunOptionsAndReturnExitCode(Options options)
         {
             Console.WriteLine("PAM to FASAMS Execution Starting");
             if (options.BatchMode)
@@ -66,11 +67,30 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Press any key to exit.");
             Console.ReadKey();
+            return 0;
         }
-
-        static void HandleParseError(IEnumerable<Error> errors)
+        static int RunAdminOptionsAndReturnExitCode(AdminOptions options)
         {
-
+            if (options.Directory == null)
+            {
+                options.Directory = Environment.CurrentDirectory;
+            }
+            options.Directory = Path.GetFullPath(options.Directory);
+            AdminFunctions functions = new AdminFunctions();
+            Console.WriteLine("Running Administrative Tasks based on input options.");
+            switch (options.Type)
+            {
+                case AdminTask.DUMP_DB:
+                    functions.ExecuteDumpDatabase(options);
+                    break;
+                case AdminTask.LOAD_DB:
+                    functions.ExecuteLoadDatabase(options);
+                    break;
+                case AdminTask.LOAD_FILE:
+                    functions.ExecuteLoadFile(options);
+                    break;
+            }
+            return 0;
         }
 
         static void Init()

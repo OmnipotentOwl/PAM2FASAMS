@@ -19,14 +19,15 @@ namespace PAM2FASAMS.OutputFormats
     [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
     public partial class Subcontracts
     {
-        public SubcontractsSubcontract Subcontract { get; set; }
+        [System.Xml.Serialization.XmlElementAttribute("Subcontract")]
+        public List<Subcontract> subcontracts { get; set; }
     }
 
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    public partial class SubcontractsSubcontract
+    public partial class Subcontract
     {
         [Key, Column(Order = 0)]
         public string ContractNumber { get; set; }
@@ -43,6 +44,7 @@ namespace PAM2FASAMS.OutputFormats
         public string ExpirationDate { get; set; }
         [Key, Column(Order = 2)]
         [MaxLength(50)]
+        [DefaultValue("")]
         public string AmendmentNumber { get; set; }
         public string AmendmentDate { get; set; }
         [System.Xml.Serialization.XmlArrayItemAttribute("SubcontractService", IsNullable = false)]
@@ -95,7 +97,7 @@ namespace PAM2FASAMS.OutputFormats
         [ForeignKey("Subcontract"), Column(Order = 1)]
         public string AmendmentNumber { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
-        public virtual SubcontractsSubcontract Subcontract { get; set; }
+        public virtual Subcontract Subcontract { get; set; }
     }
 
     [System.SerializableAttribute()]
@@ -124,7 +126,7 @@ namespace PAM2FASAMS.OutputFormats
         [Key,ForeignKey("Subcontract"), Column(Order = 4)]
         public string AmendmentNumber { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
-        public virtual SubcontractsSubcontract Subcontract { get; set; }
+        public virtual Subcontract Subcontract { get; set; }
     }
 
     [System.SerializableAttribute()]
@@ -153,6 +155,6 @@ namespace PAM2FASAMS.OutputFormats
         [Key, ForeignKey("Subcontract"), Column(Order = 4)]
         public string AmendmentNumber { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
-        public virtual SubcontractsSubcontract Subcontract { get; set; }
+        public virtual Subcontract Subcontract { get; set; }
     }
 }

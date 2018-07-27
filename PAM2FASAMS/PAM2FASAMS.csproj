@@ -73,6 +73,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdminFunctions.cs" />
     <Compile Include="DataContext\fasams_db.cs" />
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="OutputFormats\ServiceEventDataSet.cs" />

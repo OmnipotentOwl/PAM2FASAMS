@@ -49,6 +49,10 @@ namespace PAM2FASAMS.DataContext
         public virtual DbSet<ServiceEventCoveredServiceModifier> CoveredServiceModifiers { get; set; }
         public virtual DbSet<ServiceEventHcpcsProcedureModifier> HcpcsProcedureModifiers { get; set; }
         public virtual DbSet<ServiceEventExpenditureModifier> ExpenditureModifiers { get; set; }
+        public virtual DbSet<Subcontract> Subcontracts { get; set; }
+        public virtual DbSet<SubcontractService> SubcontractServices { get; set; }
+        public virtual DbSet<SubcontractOutputMeasure> SubcontractOutputMeasures { get; set; }
+        public virtual DbSet<SubcontractOutcomeMeasure> SubcontractOutcomeMeasures { get; set; }
 
     }
 }
