@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<FileMap>
+  <Field Name="ContractorID" Start="0" Length="10"/>
+  <Field Name="SSN" Start="10" Length="9"/>
+  <Field Name="EvalDate" Start="19" Length="8"/>
+  <Field Name="Purpose" Start="27" Length="1"/>
+  <Field Name="ProvId" Start="28" Length="10"/>
+  <Field Name="AsamDate" Start="38" Length="8"/>
+  <Field Name="SAProgram" Start="46" Length="1"/>
+  <Field Name="RecommendLvl" Start="47" Length="2"/>
+  <Field Name="ActualLvl" Start="49" Length="2"/>
+  <Field Name="BegDate" Start="51" Length="8"/>
+  <Field Name="EndDate" Start="59" Length="8"/>
+  <Field Name="ContNum1" Start="67" Length="5"/>
+  <Field Name="ContNum2" Start="72" Length="5"/>
+  <Field Name="ContNum3" Start="77" Length="5"/>
+  <Field Name="StaffId" Start="82" Length="12"/>
+  <Field Name="ProvInfo" Start="94" Length="20"/>
+</FileMap>

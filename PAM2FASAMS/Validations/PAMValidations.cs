@@ -85,6 +85,17 @@ namespace PAM2FASAMS
                         }
                         break;
                     }
+                case FileType.ASAM:
+                    {
+                        switch (purpose)
+                        {
+                            case "1": return UpdateType.Admission;
+                            case "2": return UpdateType.Update;
+                            case "3": return UpdateType.Discharge;
+                            //case "9": return UpdateType.ImDischarge;
+                        }
+                        break;
+                    }
                 default:
                     break;
             }

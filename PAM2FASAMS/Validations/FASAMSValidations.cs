@@ -419,14 +419,75 @@ namespace PAM2FASAMS
                         int security = int.Parse(fields.Where(r => r.Name == "Security").Single().Value.Trim());
                         return (saHist + depress + anxiety + hyperAct + thought + cognitiv + medical + traumati + substanc + relation + famRela + famEnvi + aDLFunct + selfCare + workScho + dangSelf + dangOth + security).ToString();
                     }
-                case FileType.ASAM:
-                    {
-                        return null;
-                    }
                 default:
                     return null;
             }
         }
+        //public static string ValidateEvalToolRLvl(FileType type, List<Field> fields)
+        //{
+        //    switch (type)
+        //    {
+        //        case FileType.ASAM:
+        //            {
+        //                string SAProgram = (fields.Where(r => r.Name == "SAProgram").Single().Value);
+        //                string lvl = (fields.Where(r => r.Name == "RecommendLvl").Single().Value);
+        //                switch (SAProgram)
+        //                {
+        //                    case "2":
+        //                        {
+        //                            switch (lvl)
+        //                            {
+        //                                case "14": return "1";
+        //                                case "11": return "2";
+        //                                case "09": return "3";
+        //                                case "12": return "4";
+        //                                case "01": return "5";
+        //                                case "02": return "6";
+        //                                case "03": return "7";
+        //                                case "": return "9";
+        //                                case "": return "11";
+        //                                case "07": return "12";
+        //                                case "": return "13";
+        //                                case "": return "14";
+        //                                case "": return "15";
+        //                                case "": return "16";
+        //                                case "17": return "17";
+        //                                default:
+        //                                    return null;
+        //                            }
+        //                        }
+        //                    case "4":
+        //                        {
+        //                            switch (lvl)
+        //                            {
+        //                                case "14": return "1";
+        //                                case "11": return "2";
+
+        //                                default:
+        //                                    return null;
+        //                            }
+        //                        }
+        //                    default:
+        //                        return null;
+        //                }
+        //            }
+        //        default:
+        //            return null;
+        //    }
+        //}
+        //public static string ValidateEvalToolALvl(FileType type, List<Field> fields)
+        //{
+        //    switch (type)
+        //    {
+        //        case FileType.ASAM:
+        //            {
+        //                string SAProgram = (fields.Where(r => r.Name == "SAProgram").Single().Value);
+        //                string lvl = (fields.Where(r => r.Name == "ActualLvl").Single().Value);
+        //            }
+        //        default:
+        //            return null;
+        //    }
+        //}
         public static string ValidateDischargeReasonCode(string pamData)
         {
             if (!string.IsNullOrWhiteSpace(pamData))
