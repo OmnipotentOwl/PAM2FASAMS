@@ -43,8 +43,10 @@ namespace PAM2FASAMS
                         InvokeDemoConversion(clientDataSet, options.InputFile);
                         break;
                     case "SAPERFA":
+                        InvokeSAAdmitConversion(treatmentEpisodeDataSet, options.InputFile);
                         break;
                     case "SAPERFD":
+                        InvokeSADischargeConversion(treatmentEpisodeDataSet, options.InputFile);
                         break;
                     case "SADT":
                         break;
@@ -191,6 +193,570 @@ namespace PAM2FASAMS
                 }
             }
             Console.WriteLine("Completed Conversion of PAM DEMO file.");
+        }
+        public static void InvokeSAAdmitConversion(string inputFile, string outputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM SA ADMSN file..");
+            TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
+            InvokeSAAdmitConversion(treatmentEpisodeDataSet, inputFile);
+            WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Conversion of PAM SA ADMSN file.");
+        }
+        public static void InvokeSAAdmitConversion(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM SA ADMSN file..");
+            bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
+            if (IsDelete)
+            {
+                PAMMappingFile = @"InputFormats/PAM-SAADMSN-D.xml";
+            }
+            else
+            {
+                PAMMappingFile = @"InputFormats/PAM-SAADMSN.xml";
+            }
+            var pamFile = ParseFile(inputFile, PAMMappingFile);
+            int rowNum = 1;
+            foreach (var pamRow in pamFile)
+            {
+                try
+                {
+                    var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
+                    var clientId = FASAMSValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
+                    var client = DataTools.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    if (IsDelete)
+                    {
+
+                    }
+                    else
+                    {
+                        var type = PAMValidations.ValidateEvalPurpose(FileType.SAPERFA, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
+                        string evalDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
+                        switch (type)
+                        {
+                            case PAMValidations.UpdateType.Admission:
+                                {
+                                    TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    string programCode = FASAMSValidations.ValidateAdmissionProgramCode("SA", client.BirthDate, evalDate);
+                                    string subContNum = (pamRow.Where(r => r.Name == "ContNum1").Single().Value);
+                                    var contract = DataTools.OpportuniticlyLoadSubcontract(subContNum, evalDate, fedTaxId);
+                                    if (treatmentEpisode.Admissions != null && treatmentEpisode.Admissions.Count > 0)
+                                    {
+                                        Admission initialAdmit = treatmentEpisode.Admissions.Where(a => a.TypeCode == "1").Single();
+                                        if (initialAdmit.InternalAdmissionDate < DateTime.Parse(evalDate) && initialAdmit.ProgramAreaCode == programCode)
+                                        {
+                                            treatmentEpisode = new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = client.SourceRecordIdentifier, FederalTaxIdentifier = fedTaxId, Admissions = new List<Admission>() };
+                                        }
+                                    }
+                                    Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    if (admission.AdmissionDate == null)
+                                    {
+                                        admission.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
+                                        admission.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value));
+                                        admission.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value));
+                                        admission.ContractNumber = contract?.ContractNumber; //subject to change based on ME feedback.
+                                        admission.SubcontractNumber = contract?.SubcontractNumber; //subject to change based on ME feedback.
+                                        admission.AdmissionDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
+                                        admission.ReferralSourceCode = (pamRow.Where(r => r.Name == "Referral").Single().Value);
+                                        admission.TypeCode = "1";
+                                        admission.ProgramAreaCode = FASAMSValidations.ValidateAdmissionProgramCode("SA", client.BirthDate, evalDate);
+                                        admission.TreatmentSettingCode = "todo"; //not sure how to calculate this based on existing data.
+                                        admission.IsCodependentCode = (pamRow.Where(r => r.Name == "Collateral").Single().Value);
+                                        admission.DaysWaitingToEnterTreatmentKnownCode = FASAMSValidations.ValidateWaitingDaysAvailable((pamRow.Where(r => r.Name == "WaitDays").Single().Value));
+                                        admission.DaysWaitingToEnterTreatmentNumber = ((FASAMSValidations.ValidateWaitingDaysAvailable((pamRow.Where(r => r.Name == "WaitDays").Single().Value)) == "1") ? int.Parse(pamRow.Where(r => r.Name == "WaitDays").Single().Value) : 0);
+                                        admission.PerformanceOutcomeMeasures = new List<PerformanceOutcomeMeasure>();
+                                        admission.Diagnoses = new List<Diagnosis>();
+                                    }
+                                    Admission newAdmission = new Admission
+                                    {
+                                        SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                        SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value),
+                                        StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                        StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                        ContractNumber = (pamRow.Where(r => r.Name == "ContNum1").Single().Value),
+                                        AdmissionDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value)),
+                                        ReferralSourceCode = (pamRow.Where(r => r.Name == "Referral").Single().Value),
+                                        TypeCode = "1",
+                                        ProgramAreaCode = FASAMSValidations.ValidateAdmissionProgramCode("SA", client.BirthDate, evalDate),
+                                        TreatmentSettingCode = "todo", //not sure how to calculate this based on existing data.
+                                        IsCodependentCode = (pamRow.Where(r => r.Name == "Collateral").Single().Value),
+                                        DaysWaitingToEnterTreatmentKnownCode = FASAMSValidations.ValidateWaitingDaysAvailable((pamRow.Where(r => r.Name == "WaitDays").Single().Value)),
+                                        DaysWaitingToEnterTreatmentNumber = ((FASAMSValidations.ValidateWaitingDaysAvailable((pamRow.Where(r => r.Name == "WaitDays").Single().Value)) == "1") ? int.Parse(pamRow.Where(r => r.Name == "WaitDays").Single().Value) : 0),
+                                        PerformanceOutcomeMeasures = new List<PerformanceOutcomeMeasure>(),
+                                        Diagnoses = new List<Diagnosis>(),
+                                    };
+
+                                    PerformanceOutcomeMeasure performanceOutcomeMeasure = new PerformanceOutcomeMeasure
+                                    {
+                                        SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                        StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                        StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                        PerformanceOutcomeMeasureDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value)),
+                                        ClientDemographic = new ClientDemographic
+                                        {
+                                            VeteranStatusCode = (pamRow.Where(r => r.Name == "VetStatus").Single().Value),
+                                            MaritalStatusCode = (pamRow.Where(r => r.Name == "Marital").Single().Value),
+                                            ResidenceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyResid").Single().Value),
+                                            ResidencePostalCode = (pamRow.Where(r => r.Name == "Zip").Single().Value),
+                                        },
+                                        FinancialAndHousehold = new FinancialAndHousehold
+                                        {
+                                            PrimaryIncomeSourceCode = (pamRow.Where(r => r.Name == "PIncoSrc").Single().Value),
+                                            AnnualPersonalIncomeKnownCode = FASAMSValidations.ValidateIncomeAvailable((pamRow.Where(r => r.Name == "IncoPers").Single().Value)),
+                                            AnnualPersonalIncomeAmount = ((FASAMSValidations.ValidateIncomeAvailable((pamRow.Where(r => r.Name == "IncoPers").Single().Value)) == "1") ? decimal.Parse(pamRow.Where(r => r.Name == "IncoPers").Single().Value) : 0),
+                                            AnnualPersonalIncomeAmountSpecified = (FASAMSValidations.ValidateIncomeAvailable((pamRow.Where(r => r.Name == "IncoPers").Single().Value)) == "1") ? true : false,
+                                            AnnualFamilyIncomeKnownCode = FASAMSValidations.ValidateIncomeAvailable((pamRow.Where(r => r.Name == "FamInc").Single().Value)),
+                                            AnnualFamilyIncomeAmount = ((FASAMSValidations.ValidateIncomeAvailable((pamRow.Where(r => r.Name == "FamInc").Single().Value)) == "1") ? decimal.Parse(pamRow.Where(r => r.Name == "FamInc").Single().Value) : 0),
+                                            AnnualFamilyIncomeAmountSpecified = (FASAMSValidations.ValidateIncomeAvailable((pamRow.Where(r => r.Name == "FamInc").Single().Value)) == "1") ? true : false,
+                                            PrimaryPaymentSourceCode = "",
+                                            HealthInsuranceCode = "",
+                                            TemporaryAssistanceForNeedyFamiliesStatusCode = (pamRow.Where(r => r.Name == "TStat").Single().Value),
+                                            FamilySizeNumberKnownCode = FASAMSValidations.ValidateFamilySizeAvailable((pamRow.Where(r => r.Name == "FamSize").Single().Value)),
+                                            FamilySizeNumber = ((FASAMSValidations.ValidateFamilySizeAvailable((pamRow.Where(r => r.Name == "FamSize").Single().Value)) == "1") ? int.Parse(pamRow.Where(r => r.Name == "FamSize").Single().Value) : 0),
+                                            FamilySizeNumberSpecified = (FASAMSValidations.ValidateFamilySizeAvailable((pamRow.Where(r => r.Name == "FamSize").Single().Value)) == "1") ? true : false,
+                                            DependentsKnownCode = FASAMSValidations.ValidateFamilySizeAvailable((pamRow.Where(r => r.Name == "Depend").Single().Value)),
+                                            DependentsCount = ((FASAMSValidations.ValidateFamilySizeAvailable((pamRow.Where(r => r.Name == "Depend").Single().Value)) == "1") ? int.Parse(pamRow.Where(r => r.Name == "Depend").Single().Value) : 0),
+                                            DependentsCountSpecified = (FASAMSValidations.ValidateFamilySizeAvailable((pamRow.Where(r => r.Name == "Depend").Single().Value)) == "1") ? true : false
+                                        },
+                                        Health = new Health
+                                        {
+                                            PregnancyTrimesterCode = (pamRow.Where(r => r.Name == "PregTrim").Single().Value),
+                                            RecentlyBecomePostpartumCode = (pamRow.Where(r => r.Name == "PostPart").Single().Value),
+                                            IntravenousSubstanceHistoryCode = (pamRow.Where(r => r.Name == "IVHist").Single().Value)
+                                        },
+                                        EducationAndEmployment = new EducationAndEmployment
+                                        {
+                                            EducationGradeLevelCode = (pamRow.Where(r => r.Name == "Grade").Single().Value),
+                                            SchoolAttendanceStatusCode = "",
+                                            SchoolSuspensionOrExpulsionStatusCode = (pamRow.Where(r => r.Name == "School").Single().Value),
+                                            EmploymentStatusCode = (pamRow.Where(r => r.Name == "Empl").Single().Value),
+                                        },
+                                        Recovery = new Recovery
+                                        {
+                                            SelfHelpGroupAttendanceFrequencyCode = (pamRow.Where(r => r.Name == "Social").Single().Value)
+                                        },
+                                        SubstanceUseDisorders = new List<SubstanceUseDisorder>(),
+                                        Medication = new Medication
+                                        {
+                                            MedicationAssistedOpioidTherapyCode = (pamRow.Where(r => r.Name == "OpioidReplac").Single().Value)
+                                        },
+                                        Legal = new Legal
+                                        {
+                                            ArrestsInLast30DaysKnownCode = FASAMSValidations.ValidateArrestsKnown((pamRow.Where(r => r.Name == "Arrest").Single().Value)),
+                                            ArrestsInLast30DaysNumber = ((FASAMSValidations.ValidateArrestsKnown((pamRow.Where(r => r.Name == "Arrest").Single().Value)) == "1") ? int.Parse(pamRow.Where(r => r.Name == "Arrest").Single().Value) : 0),
+                                            ArrestsInLast30DaysNumberSpecified = (FASAMSValidations.ValidateArrestsKnown((pamRow.Where(r => r.Name == "Arrest").Single().Value)) == "1") ? true : false,
+                                            IsVoluntarilyInTreatmentCode = (pamRow.Where(r => r.Name == "AdmiType").Single().Value),
+                                            IsLegallyIncompetentCode = (pamRow.Where(r => r.Name == "AdmiType").Single().Value),
+                                            LegalStatusCode = "",
+                                            LegalGuardianRelationshipCode = (pamRow.Where(r => r.Name == "LegGuard").Single().Value),
+                                            ChildrenDependencyOrDelinquencyStatusCode = (pamRow.Where(r => r.Name == "DepCrimS").Single().Value),
+                                            MeetsCriteriaForMarchmanActCode = (pamRow.Where(r => r.Name == "Marchman").Single().Value),
+                                            MarchmanActTypeCode = (pamRow.Where(r => r.Name == "Marchman").Single().Value),
+                                            DrugCourtOrderedCode = (pamRow.Where(r => r.Name == "DrugCrt").Single().Value)
+                                        }
+                                    };
+                                    List<SubstanceUseDisorder> updatedSUD = new List<SubstanceUseDisorder>();
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "ProbPrim").Single().Value))
+                                    {
+                                        SubstanceUseDisorder sud = new SubstanceUseDisorder
+                                        {
+                                            DisorderRankCode = "1",
+                                            DisorderCode = (pamRow.Where(r => r.Name == "ProbPrim").Single().Value),
+                                            RouteOfAdministrationCode = (pamRow.Where(r => r.Name == "RoutPrim").Single().Value),
+                                            FrequencyofUseCode = (pamRow.Where(r => r.Name == "FreqPrim").Single().Value),
+                                            FirstUseAge = pamRow.Where(r => r.Name == "AgePrim").Single().Value.Trim(),
+                                            PerfSourceId = performanceOutcomeMeasure.SourceRecordIdentifier
+                                        };
+                                        updatedSUD.Add(sud);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "ProbSec").Single().Value))
+                                    {
+                                        SubstanceUseDisorder sud = new SubstanceUseDisorder
+                                        {
+                                            DisorderRankCode = "2",
+                                            DisorderCode = (pamRow.Where(r => r.Name == "ProbSec").Single().Value),
+                                            RouteOfAdministrationCode = (pamRow.Where(r => r.Name == "RoutSec").Single().Value),
+                                            FrequencyofUseCode = (pamRow.Where(r => r.Name == "FreqSec").Single().Value),
+                                            FirstUseAge = pamRow.Where(r => r.Name == "AgeSec").Single().Value.Trim(),
+                                            PerfSourceId = performanceOutcomeMeasure.SourceRecordIdentifier
+                                        };
+                                        updatedSUD.Add(sud);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "ProbTer").Single().Value))
+                                    {
+                                        SubstanceUseDisorder sud = new SubstanceUseDisorder
+                                        {
+                                            DisorderRankCode = "3",
+                                            DisorderCode = (pamRow.Where(r => r.Name == "ProbTer").Single().Value),
+                                            RouteOfAdministrationCode = (pamRow.Where(r => r.Name == "RoutTer").Single().Value),
+                                            FrequencyofUseCode = (pamRow.Where(r => r.Name == "FreqTer").Single().Value),
+                                            FirstUseAge = pamRow.Where(r => r.Name == "AgeTer").Single().Value.Trim(),
+                                            PerfSourceId = performanceOutcomeMeasure.SourceRecordIdentifier
+                                        };
+                                        updatedSUD.Add(sud);
+                                    }
+                                    performanceOutcomeMeasure.SubstanceUseDisorders = updatedSUD;
+                                    FASAMSValidations.ProcessPerformanceOutcomeMeasure(admission, performanceOutcomeMeasure);
+                                    List<Diagnosis> updatedDx = new List<Diagnosis>();
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "SaDiag").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "2",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "SaDiag10").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "3",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag10").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "MhDiag").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "2",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "MhDiag10").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "3",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag10").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "InitEvada").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    FASAMSValidations.ProcessDiagnosis(admission, updatedDx, evalDate);
+                                    FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    try
+                                    {
+                                        DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        {
+                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        }
+                                    }
+                                    catch (DbEntityValidationException ex)
+                                    {
+                                        // Retrieve the error messages as a list of strings.
+                                        var errorMessages = ex.EntityValidationErrors
+                                                .SelectMany(x => x.ValidationErrors)
+                                                .Select(x => x.ErrorMessage);
+
+                                        // Join the list to a single string.
+                                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                                        // Combine the original exception message with the new one.
+                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                                        // Throw a new DbEntityValidationException with the improved exception message.
+                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                                    }
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.ImDischarge:
+                                {
+                                    TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    ImmediateDischarge immediateDischarge = DataTools.OpportuniticlyLoadImmediateDischarge(treatmentEpisode, type, evalDate);
+                                    immediateDischarge.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value));
+                                    immediateDischarge.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value));
+                                    immediateDischarge.EvaluationDate = evalDate;
+                                    FASAMSValidations.ProcessImmediateDischarge(treatmentEpisode, immediateDischarge);
+                                    try
+                                    {
+                                        DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        {
+                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        }
+                                    }
+                                    catch (DbEntityValidationException ex)
+                                    {
+                                        // Retrieve the error messages as a list of strings.
+                                        var errorMessages = ex.EntityValidationErrors
+                                                .SelectMany(x => x.ValidationErrors)
+                                                .Select(x => x.ErrorMessage);
+
+                                        // Join the list to a single string.
+                                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                                        // Combine the original exception message with the new one.
+                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                                        // Throw a new DbEntityValidationException with the improved exception message.
+                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                                    }
+                                    break;
+                                }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteErrorLog(ex, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                }
+                rowNum++;
+            }
+            Console.WriteLine("Completed Conversion of PAM SA ADMSN file.");
+        }
+        public static void InvokeSADischargeConversion(string inputFile, string outputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM SA DCHRG file..");
+            TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
+            InvokeSADischargeConversion(treatmentEpisodeDataSet, inputFile);
+            WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Conversion of PAM SA DCHRG file.");
+        }
+        public static void InvokeSADischargeConversion(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM SA DCHRG file..");
+            bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
+            if (IsDelete)
+            {
+                PAMMappingFile = @"InputFormats/PAM-SADCHRG-D.xml";
+            }
+            else
+            {
+                PAMMappingFile = @"InputFormats/PAM-SADCHRG.xml";
+            }
+            var pamFile = ParseFile(inputFile, PAMMappingFile);
+            int rowNum = 1;
+            foreach (var pamRow in pamFile)
+            {
+                try
+                {
+                    var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
+                    var clientId = FASAMSValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
+                    var client = DataTools.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    if (IsDelete)
+                    {
+
+                    }
+                    else
+                    {
+                        var type = PAMValidations.ValidateEvalPurpose(FileType.SAPERFD, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
+                        string evalDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
+                        switch (type)
+                        {
+                            case PAMValidations.UpdateType.Discharge:
+                                {
+                                    var dischargeType = pamRow.Where(r => r.Name == "Purpose").Single().Value;
+                                    TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Discharge discharge = DataTools.OpportuniticlyLoadDischarge(admission, evalDate);
+                                    discharge.StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value));
+                                    discharge.StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value));
+                                    discharge.TypeCode = "2";
+                                    discharge.DischargeDate = evalDate;
+                                    discharge.LastContactDate = evalDate;
+                                    discharge.DischargeReasonCode = FASAMSValidations.ValidateDischargeReasonCode((pamRow.Where(r => r.Name == "DReason").Single().Value).Trim());
+                                    discharge.BirthOutcomeCode = (pamRow.Where(r => r.Name == "DOutcome").Single().Value);
+                                    discharge.DrugFreeAtDeliveryCode = (pamRow.Where(r => r.Name == "DrugFree").Single().Value);
+                                    discharge.FriendsUseDrugsCode = (pamRow.Where(r => r.Name == "FriendUse").Single().Value);
+                                    discharge.FutureDrugUseIntendedCode = (pamRow.Where(r => r.Name == "FutUse").Single().Value);
+                                    PerformanceOutcomeMeasure performanceOutcomeMeasure = new PerformanceOutcomeMeasure
+                                    {
+                                        SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                        StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                        StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                        PerformanceOutcomeMeasureDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value)),
+                                        ClientDemographic = new ClientDemographic
+                                        {
+                                            //VeteranStatusCode = (pamRow.Where(r => r.Name == "VetStatus").Single().Value),
+                                            MaritalStatusCode = (pamRow.Where(r => r.Name == "Marital").Single().Value),
+                                            ResidenceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyResid").Single().Value),
+                                            //ResidencePostalCode = (pamRow.Where(r => r.Name == "Zip").Single().Value),
+                                        },
+                                        Health = new Health
+                                        {
+                                            PregnancyTrimesterCode = (pamRow.Where(r => r.Name == "PregTrim").Single().Value),
+                                            //RecentlyBecomePostpartumCode = (pamRow.Where(r => r.Name == "PostPart").Single().Value),
+                                            //IntravenousSubstanceHistoryCode = (pamRow.Where(r => r.Name == "IVHist").Single().Value)
+                                        },
+                                        EducationAndEmployment = new EducationAndEmployment
+                                        {
+                                            EducationGradeLevelCode = (pamRow.Where(r => r.Name == "Grade").Single().Value),
+                                            SchoolAttendanceStatusCode = "",
+                                            SchoolSuspensionOrExpulsionStatusCode = (pamRow.Where(r => r.Name == "School").Single().Value),
+                                            EmploymentStatusCode = (pamRow.Where(r => r.Name == "Empl").Single().Value),
+                                        },
+                                        Recovery = new Recovery
+                                        {
+                                            SelfHelpGroupAttendanceFrequencyCode = (pamRow.Where(r => r.Name == "Social").Single().Value)
+                                        },
+                                        SubstanceUseDisorders = new List<SubstanceUseDisorder>(),
+                                        Legal = new Legal
+                                        {
+                                            ArrestsInLast30DaysKnownCode = FASAMSValidations.ValidateArrestsKnown((pamRow.Where(r => r.Name == "Arrest").Single().Value)),
+                                            ArrestsInLast30DaysNumber = ((FASAMSValidations.ValidateArrestsKnown((pamRow.Where(r => r.Name == "Arrest").Single().Value)) == "1") ? int.Parse(pamRow.Where(r => r.Name == "Arrest").Single().Value) : 0),
+                                            ArrestsInLast30DaysNumberSpecified = (FASAMSValidations.ValidateArrestsKnown((pamRow.Where(r => r.Name == "Arrest").Single().Value)) == "1") ? true : false,
+                                            IsVoluntarilyInTreatmentCode = (pamRow.Where(r => r.Name == "AdmiType").Single().Value),
+                                            IsLegallyIncompetentCode = (pamRow.Where(r => r.Name == "AdmiType").Single().Value),
+                                            LegalStatusCode = "",
+                                            //LegalGuardianRelationshipCode = (pamRow.Where(r => r.Name == "LegGuard").Single().Value),
+                                            ChildrenDependencyOrDelinquencyStatusCode = (pamRow.Where(r => r.Name == "DepCrimS").Single().Value),
+                                            //MeetsCriteriaForMarchmanActCode = (pamRow.Where(r => r.Name == "Marchman").Single().Value),
+                                            //MarchmanActTypeCode = (pamRow.Where(r => r.Name == "Marchman").Single().Value),
+                                            DrugCourtOrderedCode = (pamRow.Where(r => r.Name == "DrugCrt").Single().Value)
+                                        }
+                                    };
+                                    List<SubstanceUseDisorder> updatedSUD = new List<SubstanceUseDisorder>();
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "ProbPrim").Single().Value))
+                                    {
+                                        SubstanceUseDisorder sud = new SubstanceUseDisorder
+                                        {
+                                            DisorderRankCode = "1",
+                                            DisorderCode = (pamRow.Where(r => r.Name == "ProbPrim").Single().Value),
+                                            RouteOfAdministrationCode = (pamRow.Where(r => r.Name == "RoutPrim").Single().Value),
+                                            FrequencyofUseCode = (pamRow.Where(r => r.Name == "FreqPrim").Single().Value),
+                                            FirstUseAge = pamRow.Where(r => r.Name == "AgePrim").Single().Value.Trim(),
+                                            PerfSourceId = performanceOutcomeMeasure.SourceRecordIdentifier
+                                        };
+                                        updatedSUD.Add(sud);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "ProbSec").Single().Value))
+                                    {
+                                        SubstanceUseDisorder sud = new SubstanceUseDisorder
+                                        {
+                                            DisorderRankCode = "2",
+                                            DisorderCode = (pamRow.Where(r => r.Name == "ProbSec").Single().Value),
+                                            RouteOfAdministrationCode = (pamRow.Where(r => r.Name == "RoutSec").Single().Value),
+                                            FrequencyofUseCode = (pamRow.Where(r => r.Name == "FreqSec").Single().Value),
+                                            FirstUseAge = pamRow.Where(r => r.Name == "AgeSec").Single().Value.Trim(),
+                                            PerfSourceId = performanceOutcomeMeasure.SourceRecordIdentifier
+                                        };
+                                        updatedSUD.Add(sud);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "ProbTer").Single().Value))
+                                    {
+                                        SubstanceUseDisorder sud = new SubstanceUseDisorder
+                                        {
+                                            DisorderRankCode = "3",
+                                            DisorderCode = (pamRow.Where(r => r.Name == "ProbTer").Single().Value),
+                                            RouteOfAdministrationCode = (pamRow.Where(r => r.Name == "RoutTer").Single().Value),
+                                            FrequencyofUseCode = (pamRow.Where(r => r.Name == "FreqTer").Single().Value),
+                                            FirstUseAge = pamRow.Where(r => r.Name == "AgeTer").Single().Value.Trim(),
+                                            PerfSourceId = performanceOutcomeMeasure.SourceRecordIdentifier
+                                        };
+                                        updatedSUD.Add(sud);
+                                    }
+                                    performanceOutcomeMeasure.SubstanceUseDisorders = updatedSUD;
+                                    List<Diagnosis> updatedDx = new List<Diagnosis>();
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "SaDiag").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "2",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "SaDiag10").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "3",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "SaDiag10").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "MhDiag").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "2",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "MhDiag10").Single().Value))
+                                    {
+                                        Diagnosis dx = new Diagnosis
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = FASAMSValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = FASAMSValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            CodeSetIdentifierCode = "3",
+                                            DiagnosisCode = pamRow.Where(r => r.Name == "MhDiag10").Single().Value.Trim(),
+                                            StartDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
+                                        };
+                                        updatedDx.Add(dx);
+                                    }
+                                    FASAMSValidations.ProcessPerformanceOutcomeMeasure(discharge, performanceOutcomeMeasure);
+                                    FASAMSValidations.ProcessDiagnosis(admission, discharge, updatedDx, evalDate, dischargeType);
+                                    FASAMSValidations.ProcessDischarge(admission, discharge);
+                                    FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    try
+                                    {
+                                        DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        {
+                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        }
+                                    }
+                                    catch (DbEntityValidationException ex)
+                                    {
+                                        // Retrieve the error messages as a list of strings.
+                                        var errorMessages = ex.EntityValidationErrors
+                                                .SelectMany(x => x.ValidationErrors)
+                                                .Select(x => x.ErrorMessage);
+
+                                        // Join the list to a single string.
+                                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                                        // Combine the original exception message with the new one.
+                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                                        // Throw a new DbEntityValidationException with the improved exception message.
+                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                                    }
+                                    break;
+                                }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteErrorLog(ex, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                }
+                rowNum++;
+            }
+            Console.WriteLine("Completed Conversion of PAM SA DCHRG file.");
         }
         public static void InvokePerfConversion(string inputFile, string outputFile)
         {

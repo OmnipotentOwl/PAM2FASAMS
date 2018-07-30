@@ -281,6 +281,17 @@ namespace PAM2FASAMS
             string[] substring = pamId.Split(delimiter);
             return substring[1];
         }
+        public static string ValidateWaitingDaysAvailable(string pamData)
+        {
+            if (String.IsNullOrWhiteSpace(pamData))
+            {
+                return "0";
+            }
+            else
+            {
+                return "1";
+            }
+        }
         public static string ValidateIncomeAvailable(string pamData)
         {
             if (String.IsNullOrWhiteSpace(pamData))

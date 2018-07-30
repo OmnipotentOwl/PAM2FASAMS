@@ -26,6 +26,31 @@ namespace PAM2FASAMS
         {
             switch (type)
             {
+                case FileType.SAPERFA:
+                    {
+                        switch (purpose)
+                        {
+                            case "1": return UpdateType.Admission;
+                            case "2": return UpdateType.ImDischarge;
+                        }
+                        break;
+                    }
+                case FileType.SAPERFD:
+                    {
+                        switch (purpose)
+                        {
+                            case "3": return UpdateType.Discharge;
+                        }
+                        break;
+                    }
+                case FileType.SADT:
+                    {
+                        switch (purpose)
+                        {
+                            case "5": return UpdateType.Update;
+                        }
+                        break;
+                    }
                 case FileType.PERF:
                     {
                         switch (purpose)
