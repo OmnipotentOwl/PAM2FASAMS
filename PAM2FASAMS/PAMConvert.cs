@@ -57,6 +57,7 @@ namespace PAM2FASAMS
                         InvokeCFARSConversion(treatmentEpisodeDataSet, options.InputFile);
                         break;
                     case "FARS":
+                        InvokeFARSConversion(treatmentEpisodeDataSet, options.InputFile);
                         break;
                     case "ASAM":
                         break;
@@ -1444,6 +1445,7 @@ namespace PAM2FASAMS
             }
             var pamFile = ParseFile(inputFile, PAMMappingFile);
             int rowNum = 1;
+            string toolCode = "6";
             foreach (var pamRow in pamFile)
             {
                 try
@@ -1465,7 +1467,7 @@ namespace PAM2FASAMS
                                 {
                                     TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
-                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == "6").SingleOrDefault();
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
                                     var score = FASAMSValidations.ValidateEvalToolScore(FileType.CFAR, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
                                     {
@@ -1475,7 +1477,7 @@ namespace PAM2FASAMS
                                             StaffEducationLevelCode = (pamRow.Where(r => r.Name == "EduLevel").Single().Value).Trim(),
                                             StaffIdentifier = (pamRow.Where(r => r.Name == "FMHINum").Single().Value).Trim(),
                                             TypeCode = "2",
-                                            ToolCode = "6",
+                                            ToolCode = toolCode,
                                             EvaluationDate = evalDate,
                                             ScoreCode = score,
                                             Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
@@ -1513,7 +1515,7 @@ namespace PAM2FASAMS
                                 {
                                     TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
-                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == "6").SingleOrDefault();
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
                                     var score = FASAMSValidations.ValidateEvalToolScore(FileType.CFAR, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
                                     {
@@ -1523,7 +1525,7 @@ namespace PAM2FASAMS
                                             StaffEducationLevelCode = (pamRow.Where(r => r.Name == "EduLevel").Single().Value).Trim(),
                                             StaffIdentifier = (pamRow.Where(r => r.Name == "FMHINum").Single().Value).Trim(),
                                             TypeCode = "2",
-                                            ToolCode = "6",
+                                            ToolCode = toolCode,
                                             EvaluationDate = evalDate,
                                             ScoreCode = score,
                                             Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
@@ -1562,7 +1564,7 @@ namespace PAM2FASAMS
                                     TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Discharge discharge = DataTools.OpportuniticlyLoadDischarge(admission, evalDate);
-                                    Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == "6").SingleOrDefault();
+                                    Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
                                     var score = FASAMSValidations.ValidateEvalToolScore(FileType.CFAR, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
                                     {
@@ -1572,7 +1574,7 @@ namespace PAM2FASAMS
                                             StaffEducationLevelCode = (pamRow.Where(r => r.Name == "EduLevel").Single().Value).Trim(),
                                             StaffIdentifier = (pamRow.Where(r => r.Name == "FMHINum").Single().Value).Trim(),
                                             TypeCode = "2",
-                                            ToolCode = "6",
+                                            ToolCode = toolCode,
                                             EvaluationDate = evalDate,
                                             ScoreCode = score,
                                             Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier
@@ -1617,6 +1619,203 @@ namespace PAM2FASAMS
                 rowNum++;
             }
             Console.WriteLine("Completed Conversion of PAM CFARS file.");
+        }
+        public static void InvokeFARSConversion(string inputFile, string outputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM FARS file..");
+            TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
+            InvokeFARSConversion(treatmentEpisodeDataSet, inputFile);
+            WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
+            Console.WriteLine("Completed Writing of FASAMS FARS data.");
+        }
+        public static void InvokeFARSConversion(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
+        {
+            Console.WriteLine("Starting Conversion of PAM FARS file..");
+            bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
+            if (IsDelete)
+            {
+                PAMMappingFile = @"InputFormats/PAM-FARS-D.xml";
+            }
+            else
+            {
+                PAMMappingFile = @"InputFormats/PAM-FARS.xml";
+            }
+            var pamFile = ParseFile(inputFile, PAMMappingFile);
+            int rowNum = 1;
+            string toolCode = "5";
+            foreach (var pamRow in pamFile)
+            {
+                try
+                {
+                    var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
+                    var clientId = FASAMSValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
+                    var client = DataTools.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    string evalDate = FASAMSValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
+                    if (IsDelete)
+                    {
+
+                    }
+                    else
+                    {
+                        var type = PAMValidations.ValidateEvalPurpose(FileType.FARS, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
+                        switch (type)
+                        {
+                            case PAMValidations.UpdateType.Admission:
+                                {
+                                    TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    var score = FASAMSValidations.ValidateEvalToolScore(FileType.FARS, pamRow);
+                                    if (evaluation == null || evaluation.ScoreCode != score)
+                                    {
+                                        Evaluation newEvaluation = new Evaluation
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = (pamRow.Where(r => r.Name == "EduLevel").Single().Value).Trim(),
+                                            StaffIdentifier = (pamRow.Where(r => r.Name == "FMHINum").Single().Value).Trim(),
+                                            TypeCode = "2",
+                                            ToolCode = toolCode,
+                                            EvaluationDate = evalDate,
+                                            ScoreCode = score,
+                                            Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
+                                        };
+                                        admission.Evaluations.Add(newEvaluation);
+                                    }
+                                    FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    try
+                                    {
+                                        DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        {
+                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        }
+                                    }
+                                    catch (DbEntityValidationException ex)
+                                    {
+                                        // Retrieve the error messages as a list of strings.
+                                        var errorMessages = ex.EntityValidationErrors
+                                                .SelectMany(x => x.ValidationErrors)
+                                                .Select(x => x.ErrorMessage);
+
+                                        // Join the list to a single string.
+                                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                                        // Combine the original exception message with the new one.
+                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                                        // Throw a new DbEntityValidationException with the improved exception message.
+                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                                    }
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.Update:
+                                {
+                                    TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    var score = FASAMSValidations.ValidateEvalToolScore(FileType.FARS, pamRow);
+                                    if (evaluation == null || evaluation.ScoreCode != score)
+                                    {
+                                        Evaluation newEvaluation = new Evaluation
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = (pamRow.Where(r => r.Name == "EduLevel").Single().Value).Trim(),
+                                            StaffIdentifier = (pamRow.Where(r => r.Name == "FMHINum").Single().Value).Trim(),
+                                            TypeCode = "2",
+                                            ToolCode = toolCode,
+                                            EvaluationDate = evalDate,
+                                            ScoreCode = score,
+                                            Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
+                                        };
+                                        admission.Evaluations.Add(newEvaluation);
+                                    }
+                                    FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    try
+                                    {
+                                        DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        {
+                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        }
+                                    }
+                                    catch (DbEntityValidationException ex)
+                                    {
+                                        // Retrieve the error messages as a list of strings.
+                                        var errorMessages = ex.EntityValidationErrors
+                                                .SelectMany(x => x.ValidationErrors)
+                                                .Select(x => x.ErrorMessage);
+
+                                        // Join the list to a single string.
+                                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                                        // Combine the original exception message with the new one.
+                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                                        // Throw a new DbEntityValidationException with the improved exception message.
+                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                                    }
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.Discharge:
+                                {
+                                    TreatmentEpisode treatmentEpisode = DataTools.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    Admission admission = DataTools.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Discharge discharge = DataTools.OpportuniticlyLoadDischarge(admission, evalDate);
+                                    Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    var score = FASAMSValidations.ValidateEvalToolScore(FileType.FARS, pamRow);
+                                    if (evaluation == null || evaluation.ScoreCode != score)
+                                    {
+                                        Evaluation newEvaluation = new Evaluation
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = (pamRow.Where(r => r.Name == "EduLevel").Single().Value).Trim(),
+                                            StaffIdentifier = (pamRow.Where(r => r.Name == "FMHINum").Single().Value).Trim(),
+                                            TypeCode = "2",
+                                            ToolCode = toolCode,
+                                            EvaluationDate = evalDate,
+                                            ScoreCode = score,
+                                            Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier
+                                        };
+                                        discharge.Evaluations.Add(newEvaluation);
+                                    }
+                                    FASAMSValidations.ProcessDischarge(admission, discharge);
+                                    FASAMSValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    try
+                                    {
+                                        DataTools.UpsertTreatmentSession(treatmentEpisode);
+                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        {
+                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                        }
+                                    }
+                                    catch (DbEntityValidationException ex)
+                                    {
+                                        // Retrieve the error messages as a list of strings.
+                                        var errorMessages = ex.EntityValidationErrors
+                                                .SelectMany(x => x.ValidationErrors)
+                                                .Select(x => x.ErrorMessage);
+
+                                        // Join the list to a single string.
+                                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                                        // Combine the original exception message with the new one.
+                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                                        // Throw a new DbEntityValidationException with the improved exception message.
+                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                                    }
+                                    break;
+                                }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteErrorLog(ex, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                }
+                rowNum++;
+            }
+            Console.WriteLine("Completed Conversion of PAM FARS file.");
         }
         public static void InvokeServConversion(string inputFile, string outputFile)
         {

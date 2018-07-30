@@ -399,7 +399,25 @@ namespace PAM2FASAMS
                     }
                 case FileType.FARS:
                     {
-                        return null;
+                        int saHist = int.Parse(fields.Where(r => r.Name == "SAHist").Single().Value.Trim());
+                        int depress = int.Parse(fields.Where(r => r.Name == "Depress").Single().Value.Trim());
+                        int anxiety = int.Parse(fields.Where(r => r.Name == "Anxiety").Single().Value.Trim());
+                        int hyperAct = int.Parse(fields.Where(r => r.Name == "HyperAct").Single().Value.Trim());
+                        int thought = int.Parse(fields.Where(r => r.Name == "Thought").Single().Value.Trim());
+                        int cognitiv = int.Parse(fields.Where(r => r.Name == "Cognitiv").Single().Value.Trim());
+                        int medical = int.Parse(fields.Where(r => r.Name == "Medical").Single().Value.Trim());
+                        int traumati = int.Parse(fields.Where(r => r.Name == "Traumati").Single().Value.Trim());
+                        int substanc = int.Parse(fields.Where(r => r.Name == "Substanc").Single().Value.Trim());
+                        int relation = int.Parse(fields.Where(r => r.Name == "Relation").Single().Value.Trim());
+                        int famRela = int.Parse(fields.Where(r => r.Name == "FamRela").Single().Value.Trim());
+                        int famEnvi = int.Parse(fields.Where(r => r.Name == "FamEnvi").Single().Value.Trim());
+                        int aDLFunct = int.Parse(fields.Where(r => r.Name == "ADLFunct").Single().Value.Trim());
+                        int selfCare = int.Parse(fields.Where(r => r.Name == "SelfCare").Single().Value.Trim());
+                        int workScho = int.Parse(fields.Where(r => r.Name == "WorkScho").Single().Value.Trim());
+                        int dangSelf = int.Parse(fields.Where(r => r.Name == "DangSelf").Single().Value.Trim());
+                        int dangOth = int.Parse(fields.Where(r => r.Name == "DangOth").Single().Value.Trim());
+                        int security = int.Parse(fields.Where(r => r.Name == "Security").Single().Value.Trim());
+                        return (saHist + depress + anxiety + hyperAct + thought + cognitiv + medical + traumati + substanc + relation + famRela + famEnvi + aDLFunct + selfCare + workScho + dangSelf + dangOth + security).ToString();
                     }
                 case FileType.ASAM:
                     {
