@@ -42,6 +42,7 @@ namespace PAM2FASAMS
         {
             Console.WriteLine("Loading Contract file into database:");
             Subcontracts Subcontracts = new Subcontracts();
+            var dt = new DataTools();
             try
             {
                 Subcontracts = (Subcontracts)ReadXml(Subcontracts, file);
@@ -81,7 +82,7 @@ namespace PAM2FASAMS
 
                     try
                     {
-                        DataTools.UpsertSubContract(subcontract);
+                        dt.UpsertSubContract(subcontract);
                         Console.WriteLine("Added Contract: {0}, {1}, {2}", subcontract.ContractNumber, subcontract.SubcontractNumber, subcontract.AmendmentNumber);
                     }
                     catch (DbEntityValidationException ex)
