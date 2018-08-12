@@ -22,7 +22,7 @@ namespace PAM2FASAMS
             Admission,
             ImDischarge
         }
-        public static UpdateType ValidateEvalPurpose(FileType type, string purpose)
+        public UpdateType ValidateEvalPurpose(FileType type, string purpose)
         {
             switch (type)
             {
@@ -54,7 +54,7 @@ namespace PAM2FASAMS
             }
             return UpdateType.Unknown;
         }
-        public static string ValidateCoverdServiceCodeLocation(string covrdSvc, string location)
+        public string ValidateCoverdServiceCodeLocation(string covrdSvc, string location)
         {
 
             return locationMatrices.Where(l => l.CoveredService == covrdSvc && l.Location == location).SingleOrDefault()?.ValidCoveredService;
@@ -65,7 +65,7 @@ namespace PAM2FASAMS
             public string Location { get; set; }
             public string ValidCoveredService { get; set; }
         }
-        private static List<CoveredServiceLocationMatrix> locationMatrices = new List<CoveredServiceLocationMatrix>
+        private List<CoveredServiceLocationMatrix> locationMatrices = new List<CoveredServiceLocationMatrix>
         {
             new CoveredServiceLocationMatrix(){ CoveredService ="08", Location="11", ValidCoveredService="14"},
         };

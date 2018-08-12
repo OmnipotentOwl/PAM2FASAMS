@@ -11,7 +11,7 @@ namespace PAM2FASAMS
 {
     public class FASAMSValidations
     {
-        public static ProviderClientIdentifier ValidateClientIdentifier(string IdString)
+        public ProviderClientIdentifier ValidateClientIdentifier(string IdString)
         {
             ProviderClientIdentifier clientIdentifier = new ProviderClientIdentifier();
             string sudoSSPattern = "^[A-Z]{3}";
@@ -27,7 +27,7 @@ namespace PAM2FASAMS
             }
             return clientIdentifier;
         }
-        public static void ProcessProviderClientIdentifiers(ProviderClient client, ProviderClientIdentifier identifier)
+        public void ProcessProviderClientIdentifiers(ProviderClient client, ProviderClientIdentifier identifier)
         {
             if(client.ProviderClientIdentifiers.Exists(i=> i.TypeCode == identifier.TypeCode))
             {
@@ -39,7 +39,7 @@ namespace PAM2FASAMS
                 client.ProviderClientIdentifiers.Add(identifier);
             }
         }
-        public static void ProcessAdmission(TreatmentEpisode episode, Admission admission)
+        public void ProcessAdmission(TreatmentEpisode episode, Admission admission)
         {
             switch (admission.TypeCode)
             {
@@ -70,7 +70,7 @@ namespace PAM2FASAMS
                     break;
             }
         }
-        public static void ProcessDischarge(Admission admission, Discharge discharge)
+        public void ProcessDischarge(Admission admission, Discharge discharge)
         {
             switch (discharge.TypeCode)
             {
@@ -114,7 +114,7 @@ namespace PAM2FASAMS
                     break;
             }
         }
-        public static void ProcessImmediateDischarge(TreatmentEpisode episode, ImmediateDischarge discharge)
+        public void ProcessImmediateDischarge(TreatmentEpisode episode, ImmediateDischarge discharge)
         {
             if(episode.ImmediateDischarges.Any(i => i.SourceRecordIdentifier == discharge.SourceRecordIdentifier))
             {
@@ -126,7 +126,7 @@ namespace PAM2FASAMS
             episode.ImmediateDischarges.Add(discharge);
             return;
         }
-        public static void ProcessPerformanceOutcomeMeasure(Admission admission, PerformanceOutcomeMeasure outcomeMeasure)
+        public void ProcessPerformanceOutcomeMeasure(Admission admission, PerformanceOutcomeMeasure outcomeMeasure)
         {
             if(admission.PerformanceOutcomeMeasures.Any(p => p.SourceRecordIdentifier == outcomeMeasure.SourceRecordIdentifier))
             {
@@ -146,7 +146,7 @@ namespace PAM2FASAMS
             outcomeMeasure.Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier;
             admission.PerformanceOutcomeMeasures.Add(outcomeMeasure);
         }
-        public static void ProcessPerformanceOutcomeMeasure(Discharge discharge, PerformanceOutcomeMeasure outcomeMeasure)
+        public void ProcessPerformanceOutcomeMeasure(Discharge discharge, PerformanceOutcomeMeasure outcomeMeasure)
         {
             if(discharge.PerformanceOutcomeMeasures == null)
             {
@@ -167,7 +167,7 @@ namespace PAM2FASAMS
             //last option
             discharge.PerformanceOutcomeMeasures=outcomeMeasure;
         }
-        public static void ProcessDiagnosis(Admission admission, List<Diagnosis> diagnoses, string evalDate)
+        public void ProcessDiagnosis(Admission admission, List<Diagnosis> diagnoses, string evalDate)
         {
             var dxNoLongerPresent = (admission.Diagnoses).Except(diagnoses,new DiagnosisComparer()).ToList();
             var dxToAdd = diagnoses.Except(admission.Diagnoses, new DiagnosisComparer()).ToList();
@@ -216,7 +216,7 @@ namespace PAM2FASAMS
             }
 
         }
-        public static void ProcessDiagnosis(Admission admission, Discharge discharge, List<Diagnosis> diagnoses, string evalDate, string dischargeType)
+        public void ProcessDiagnosis(Admission admission, Discharge discharge, List<Diagnosis> diagnoses, string evalDate, string dischargeType)
         {
             var dxNoLongerPresent = (admission.Diagnoses).Except(diagnoses, new DiagnosisComparer()).ToList();
             var dxToAdd = diagnoses.Except(admission.Diagnoses, new DiagnosisComparer()).ToList();
@@ -264,24 +264,24 @@ namespace PAM2FASAMS
                 discharge.Diagnoses.Add(diag);
             }
         }
-        public static string ValidateFASAMSDate(string dateRaw)
+        public string ValidateFASAMSDate(string dateRaw)
         {
             DateTime result = DateTime.ParseExact(dateRaw, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None);
             return result.ToShortDateString();
         }
-        public static string ValidateFASAMSStaffEduLvlCode(string pamId)
+        public string ValidateFASAMSStaffEduLvlCode(string pamId)
         {
             char delimiter = '-';
             string[] substring = pamId.Split(delimiter);
             return substring[0];
         }
-        public static string ValidateFASAMSStaffId(string pamId)
+        public string ValidateFASAMSStaffId(string pamId)
         {
             char delimiter = '-';
             string[] substring = pamId.Split(delimiter);
             return substring[1];
         }
-        public static string ValidateIncomeAvailable(string pamData)
+        public string ValidateIncomeAvailable(string pamData)
         {
             if (String.IsNullOrWhiteSpace(pamData))
             {
@@ -292,7 +292,7 @@ namespace PAM2FASAMS
                 return "1";
             }
         }
-        public static string ValidateFamilySizeAvailable(string pamData)
+        public string ValidateFamilySizeAvailable(string pamData)
         {
             if (String.IsNullOrWhiteSpace(pamData))
             {
@@ -303,7 +303,7 @@ namespace PAM2FASAMS
                 return "1";
             }
         }
-        public static string ValidateSchoolDaysKnown(string pamData)
+        public string ValidateSchoolDaysKnown(string pamData)
         {
             if (String.IsNullOrWhiteSpace(pamData))
             {
@@ -314,7 +314,7 @@ namespace PAM2FASAMS
                 return "1";
             }
         }
-        public static string ValidateWorkDaysKnown(string pamData)
+        public string ValidateWorkDaysKnown(string pamData)
         {
             if (String.IsNullOrWhiteSpace(pamData))
             {
@@ -325,7 +325,7 @@ namespace PAM2FASAMS
                 return "1";
             }
         }
-        public static string ValidateCommunityDaysKnown(string pamData)
+        public string ValidateCommunityDaysKnown(string pamData)
         {
             if (String.IsNullOrWhiteSpace(pamData))
             {
@@ -336,7 +336,7 @@ namespace PAM2FASAMS
                 return "1";
             }
         }
-        public static string ValidateArrestsKnown(string pamData)
+        public string ValidateArrestsKnown(string pamData)
         {
             if (String.IsNullOrWhiteSpace(pamData))
             {
@@ -347,7 +347,7 @@ namespace PAM2FASAMS
                 return "1";
             }
         }
-        public static string ValidateLegalStatus(string pamData)
+        public string ValidateLegalStatus(string pamData)
         {
             switch (pamData)
             {
@@ -361,7 +361,7 @@ namespace PAM2FASAMS
                 default: return "";
             }
         }
-        public static string ValidateEvalToolScore(FileType type, List<Field> fields)
+        public string ValidateEvalToolScore(FileType type, List<Field> fields)
         {
             switch (type)
             {
@@ -398,7 +398,7 @@ namespace PAM2FASAMS
                     return null;
             }
         }
-        public static string ValidateDischargeReasonCode(string pamData)
+        public string ValidateDischargeReasonCode(string pamData)
         {
             if (!string.IsNullOrWhiteSpace(pamData))
             {
@@ -406,7 +406,7 @@ namespace PAM2FASAMS
             }
             return "0";
         }
-        public static string ValidateAdmissionCoDependent(string pamData)
+        public string ValidateAdmissionCoDependent(string pamData)
         {
             switch (pamData)
             {
@@ -426,7 +426,7 @@ namespace PAM2FASAMS
                     return "0";
             }
         }
-        public static string ValidateAdmissionProgramCode(string type,string pamData,string evalDate)
+        public string ValidateAdmissionProgramCode(string type,string pamData,string evalDate)
         {
             DateTime dob = DateTime.Parse(pamData);
             DateTime date = DateTime.Parse(evalDate);
@@ -481,7 +481,7 @@ namespace PAM2FASAMS
                     return "error";
             }
         }
-        public static string ValidateTreatmentSettingCodeFromCoveredServiceCode(string pamData)
+        public string ValidateTreatmentSettingCodeFromCoveredServiceCode(string pamData)
         {
             switch (pamData)
             {
@@ -606,7 +606,7 @@ namespace PAM2FASAMS
                     return "";
             }
         }
-        public static string ValidateExpenditureOcaCodeFromContract(Subcontract subcontract, string recordDate, string coveredService, string progCode)
+        public string ValidateExpenditureOcaCodeFromContract(Subcontract subcontract, string recordDate, string coveredService, string progCode)
         {
             DateTime date = DateTime.Parse(recordDate);
             if (subcontract != null)
@@ -625,7 +625,7 @@ namespace PAM2FASAMS
         /// </summary>  
         /// <param name="dateOfBirth">Date of birth</param>  
         /// <returns> age e.g. 26</returns>  
-        private static int CalculateAge(DateTime dateOfBirth)
+        private int CalculateAge(DateTime dateOfBirth)
         {
             int age = 0;
             age = DateTime.Now.Year - dateOfBirth.Year;
@@ -640,7 +640,7 @@ namespace PAM2FASAMS
         /// <param name="dateOfBirth">Date of birth</param>
         /// <param name="asOfDate">As of date</param>
         /// <returns> age e.g. 26</returns>  
-        private static int CalculateAge(DateTime dateOfBirth, DateTime asOfDate)
+        private int CalculateAge(DateTime dateOfBirth, DateTime asOfDate)
         {
             int age = 0;
             age = asOfDate.Year - dateOfBirth.Year;

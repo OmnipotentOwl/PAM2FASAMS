@@ -25,6 +25,7 @@ namespace PAM2FASAMS
         static int RunOptionsAndReturnExitCode(Options options)
         {
             Console.WriteLine("PAM to FASAMS Execution Starting");
+            var converter = new PAMConvert();
             if (options.BatchMode)
             {
                 if(options.Directory == null)
@@ -34,7 +35,7 @@ namespace PAM2FASAMS
                 options.Directory = Path.GetFullPath(options.Directory);
                 IEnumerable<InputFile> inputFiles = FileMapping.GetFileMapping().OrderBy(i => i.Sequence);
                 Console.WriteLine("Beginning batch execution");
-                PAMConvert.RunBatchJob(inputFiles, options);
+                converter.RunBatchJob(inputFiles, options);
                 Console.WriteLine("Batch execution completed!");
             }
             else
@@ -44,22 +45,22 @@ namespace PAM2FASAMS
                     case FileType.IDUP:
                         break;
                     case FileType.SSN:
-                        PAMConvert.InvokeSSNConversion(options.InputFile, options.OutputFile);
+                        converter.InvokeSSNConversion(options.InputFile, options.OutputFile);
                         break;
                     case FileType.DEMO:
-                        PAMConvert.InvokeDemoConversion(options.InputFile, options.OutputFile);
+                        converter.InvokeDemoConversion(options.InputFile, options.OutputFile);
                         break;
                     case FileType.PERF:
-                        PAMConvert.InvokePerfConversion(options.InputFile, options.OutputFile);
+                        converter.InvokePerfConversion(options.InputFile, options.OutputFile);
                         break;
                     case FileType.CFAR:
-                        PAMConvert.InvokeCFARSConversion(options.InputFile, options.OutputFile);
+                        converter.InvokeCFARSConversion(options.InputFile, options.OutputFile);
                         break;
                     case FileType.SERV:
-                        PAMConvert.InvokeServConversion(options.InputFile, options.OutputFile);
+                        converter.InvokeServConversion(options.InputFile, options.OutputFile);
                         break;
                     case FileType.EVNT:
-                        PAMConvert.InvokeEvntConversion(options.InputFile, options.OutputFile);
+                        converter.InvokeEvntConversion(options.InputFile, options.OutputFile);
                         break;
                     default:
                         break;

@@ -12,7 +12,7 @@ namespace PAM2FASAMS.Utilities
 {
     public class DataTools
     {
-        public static TreatmentEpisode OpportuniticlyLoadTreatmentSession(TreatmentEpisodeDataSet currentJob, UpdateType type, string recordDate, string clientSourceRecordIdentifier, string federalTaxIdentifier)
+        public TreatmentEpisode OpportuniticlyLoadTreatmentSession(TreatmentEpisodeDataSet currentJob, UpdateType type, string recordDate, string clientSourceRecordIdentifier, string federalTaxIdentifier)
         {
             DateTime date = DateTime.Parse(recordDate);
             switch (type)
@@ -83,7 +83,7 @@ namespace PAM2FASAMS.Utilities
             }
             
         }
-        public static TreatmentEpisode OpportuniticlyLoadTreatmentSession(TreatmentEpisodeType type, string recordDate, string clientSourceRecordIdentifier, string federalTaxIdentifier)
+        public TreatmentEpisode OpportuniticlyLoadTreatmentSession(TreatmentEpisodeType type, string recordDate, string clientSourceRecordIdentifier, string federalTaxIdentifier)
         {
             DateTime date = DateTime.Parse(recordDate);
             using(var db = new fasams_db())
@@ -137,7 +137,7 @@ namespace PAM2FASAMS.Utilities
                 }
             }
         }
-        public static ImmediateDischarge OpportuniticlyLoadImmediateDischarge(TreatmentEpisode episode, UpdateType type, string recordDate)
+        public ImmediateDischarge OpportuniticlyLoadImmediateDischarge(TreatmentEpisode episode, UpdateType type, string recordDate)
         {
             DateTime date = DateTime.Parse(recordDate);
             switch (type)
@@ -157,7 +157,7 @@ namespace PAM2FASAMS.Utilities
                     return null;
             }
         }
-        public static ImmediateDischarge OpportuniticlyLoadImmediateDischarge(TreatmentEpisode episode, string recordDate)
+        public ImmediateDischarge OpportuniticlyLoadImmediateDischarge(TreatmentEpisode episode, string recordDate)
         {
             DateTime date = DateTime.Parse(recordDate);
             using (var db = new fasams_db())
@@ -176,7 +176,7 @@ namespace PAM2FASAMS.Utilities
                 return new ImmediateDischarge { SourceRecordIdentifier = Guid.NewGuid().ToString(), TreatmentSourceId = episode.SourceRecordIdentifier };
             }
         }
-        public static Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, UpdateType type, string recordDate)
+        public Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, UpdateType type, string recordDate)
         {
             DateTime date = DateTime.Parse(recordDate);
             switch (type)
@@ -211,7 +211,7 @@ namespace PAM2FASAMS.Utilities
                     return null;
             }
         }
-        public static Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, string recordDate)
+        public Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, string recordDate)
         {
             DateTime date = DateTime.Parse(recordDate);
             using(var db = new fasams_db())
@@ -239,7 +239,7 @@ namespace PAM2FASAMS.Utilities
                 return new Admission { SourceRecordIdentifier = Guid.NewGuid().ToString(), Evaluations = new List<Evaluation>(), Diagnoses = new List<Diagnosis>() };
             }
         }
-        public static Discharge OpportuniticlyLoadDischarge(Admission admission, string recordDate)
+        public Discharge OpportuniticlyLoadDischarge(Admission admission, string recordDate)
         {
             DateTime date = DateTime.Parse(recordDate);
             using(var db = new fasams_db())
@@ -263,7 +263,7 @@ namespace PAM2FASAMS.Utilities
                 return null;
             }
         }
-        public static ProviderClient OpportuniticlyLoadProviderClient(ProviderClients currentJob, ProviderClientIdentifier SSN, string FederalTaxIdentifier)
+        public ProviderClient OpportuniticlyLoadProviderClient(ProviderClients currentJob, ProviderClientIdentifier SSN, string FederalTaxIdentifier)
         {
             if (currentJob.clients.Exists(c => c.FederalTaxIdentifier == FederalTaxIdentifier && c.ProviderClientIdentifiers.Exists(i=> i.Identifier == SSN.Identifier && i.ClientSourceId == c.SourceRecordIdentifier)))
             {
@@ -279,7 +279,7 @@ namespace PAM2FASAMS.Utilities
                 return OpportuniticlyLoadProviderClient(currentJob, existing.ClientSourceId, FederalTaxIdentifier);
             }
         }
-        public static ProviderClient OpportuniticlyLoadProviderClient(ProviderClientIdentifier SSN, string FederalTaxIdentifier)
+        public ProviderClient OpportuniticlyLoadProviderClient(ProviderClientIdentifier SSN, string FederalTaxIdentifier)
         { 
             ProviderClientIdentifier existing = new ProviderClientIdentifier();
             using (var db = new fasams_db())
@@ -292,7 +292,7 @@ namespace PAM2FASAMS.Utilities
             }
             return new ProviderClient();
         }
-        public static ProviderClient OpportuniticlyLoadProviderClient(ProviderClients currentJob, string SourceRecordIdentifier, string FederalTaxIdentifier)
+        public ProviderClient OpportuniticlyLoadProviderClient(ProviderClients currentJob, string SourceRecordIdentifier, string FederalTaxIdentifier)
         {
             if (currentJob.clients.Exists(c => c.SourceRecordIdentifier == SourceRecordIdentifier && c.FederalTaxIdentifier == FederalTaxIdentifier))
             {
@@ -303,7 +303,7 @@ namespace PAM2FASAMS.Utilities
                 return OpportuniticlyLoadProviderClient(SourceRecordIdentifier, FederalTaxIdentifier);
             }
         }
-        public static ProviderClient OpportuniticlyLoadProviderClient(string SourceRecordIdentifier, string FederalTaxIdentifier)
+        public ProviderClient OpportuniticlyLoadProviderClient(string SourceRecordIdentifier, string FederalTaxIdentifier)
         {
 
             using (var db = new fasams_db())
@@ -327,7 +327,7 @@ namespace PAM2FASAMS.Utilities
             }
             
         }
-        public static Subcontract OpportuniticlyLoadSubcontract(string contractNum, string subcontractNum, string recordDate, string FederalTaxIdentifier)
+        public Subcontract OpportuniticlyLoadSubcontract(string contractNum, string subcontractNum, string recordDate, string FederalTaxIdentifier)
         {
             DateTime date = DateTime.Parse(recordDate);
             using (var db = new fasams_db())
@@ -354,7 +354,7 @@ namespace PAM2FASAMS.Utilities
                 return OpportuniticlyLoadSubcontract(subcontractNum,recordDate,FederalTaxIdentifier);
             }
         }
-        public static Subcontract OpportuniticlyLoadSubcontract(string subcontractNum, string recordDate, string FederalTaxIdentifier)
+        public Subcontract OpportuniticlyLoadSubcontract(string subcontractNum, string recordDate, string FederalTaxIdentifier)
         {
             DateTime date = DateTime.Parse(recordDate);
             using (var db = new fasams_db())
@@ -381,7 +381,7 @@ namespace PAM2FASAMS.Utilities
                 return OpportuniticlyLoadSubcontract(recordDate,FederalTaxIdentifier);
             }
         }
-        public static Subcontract OpportuniticlyLoadSubcontract(string recordDate, string FederalTaxIdentifier)
+        public Subcontract OpportuniticlyLoadSubcontract(string recordDate, string FederalTaxIdentifier)
         {
             DateTime date = DateTime.Parse(recordDate);
             using (var db = new fasams_db())
@@ -408,7 +408,7 @@ namespace PAM2FASAMS.Utilities
                 return null;
             }
         }
-        public static void UpsertProviderClient(ProviderClient providerClient)
+        public void UpsertProviderClient(ProviderClient providerClient)
         {
             using(var db = new fasams_db())
             {
@@ -457,7 +457,7 @@ namespace PAM2FASAMS.Utilities
                 db.SaveChanges();
             }
         }
-        public static void UpsertTreatmentSession(TreatmentEpisode treatmentEpisode)
+        public void UpsertTreatmentSession(TreatmentEpisode treatmentEpisode)
         {
             using(var db = new fasams_db())
             {
@@ -614,7 +614,7 @@ namespace PAM2FASAMS.Utilities
                 db.SaveChanges();
             }
         }
-        public static void UpsertServiceEvent(ServiceEvent serviceEvent)
+        public void UpsertServiceEvent(ServiceEvent serviceEvent)
         {
             using(var db = new fasams_db())
             {
@@ -656,7 +656,7 @@ namespace PAM2FASAMS.Utilities
                 db.SaveChanges();
             }
         }
-        public static void UpsertSubContract(Subcontract subcontract)
+        public void UpsertSubContract(Subcontract subcontract)
         {
             using(var db = new fasams_db())
             {
