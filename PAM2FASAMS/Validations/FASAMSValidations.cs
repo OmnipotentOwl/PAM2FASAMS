@@ -281,7 +281,7 @@ namespace PAM2FASAMS
             string[] substring = pamId.Split(delimiter);
             return substring[1];
         }
-        public static string ValidateWaitingDaysAvailable(string pamData)
+        public string ValidateWaitingDaysAvailable(string pamData)
         {
             if (String.IsNullOrWhiteSpace(pamData))
             {
@@ -292,7 +292,7 @@ namespace PAM2FASAMS
                 return "1";
             }
         }
-        public static string ValidateIncomeAvailable(string pamData)
+        public string ValidateIncomeAvailable(string pamData)
         {
             if (String.IsNullOrWhiteSpace(pamData))
             {
@@ -488,7 +488,7 @@ namespace PAM2FASAMS
         //            return null;
         //    }
         //}
-        public static string ValidateDischargeReasonCode(string pamData)
+        public string ValidateDischargeReasonCode(string pamData)
         {
             if (!string.IsNullOrWhiteSpace(pamData))
             {
