@@ -92,6 +92,7 @@ namespace PAM2FASAMS
             var pamFile = ParseFile(inputFile, PAMMappingFile);
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
+            List<List<Field>> pamErrors = new List<List<Field>>();
             foreach (var pamRow in pamFile)
             {
                 ProviderClient client = new ProviderClient
@@ -111,7 +112,12 @@ namespace PAM2FASAMS
                 catch (Exception ex)
                 {
                     WriteErrorLog(ex, "ClientDataSet", Path.GetDirectoryName(inputFile));
+                    pamErrors.Add(pamRow);
                 }
+            }
+            if (pamErrors.Count > 0)
+            {
+                WritePAMErrorFile(inputFile, pamErrors);
             }
             Console.WriteLine("Completed Conversion of PAM SSN update file.");
         }
@@ -138,6 +144,7 @@ namespace PAM2FASAMS
             var pamFile = ParseFile(inputFile, PAMMappingFile);
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
+            List<List<Field>> pamErrors = new List<List<Field>>();
             foreach (var pamRow in pamFile)
             {
                 try
@@ -195,7 +202,12 @@ namespace PAM2FASAMS
                 catch (Exception ex)
                 {
                     WriteErrorLog(ex, "ClientDataSet", Path.GetDirectoryName(inputFile));
+                    pamErrors.Add(pamRow);
                 }
+            }
+            if (pamErrors.Count > 0)
+            {
+                WritePAMErrorFile(inputFile, pamErrors);
             }
             Console.WriteLine("Completed Conversion of PAM DEMO file.");
         }
@@ -224,6 +236,7 @@ namespace PAM2FASAMS
             var pValidations = new PAMValidations();
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
+            List<List<Field>> pamErrors = new List<List<Field>>();
             foreach (var pamRow in pamFile)
             {
                 try
@@ -525,8 +538,13 @@ namespace PAM2FASAMS
                 catch (Exception ex)
                 {
                     WriteErrorLog(ex, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                    pamErrors.Add(pamRow);
                 }
                 rowNum++;
+            }
+            if (pamErrors.Count > 0)
+            {
+                WritePAMErrorFile(inputFile, pamErrors);
             }
             Console.WriteLine("Completed Conversion of PAM SA ADMSN file.");
         }
@@ -555,6 +573,7 @@ namespace PAM2FASAMS
             var pValidations = new PAMValidations();
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
+            List<List<Field>> pamErrors = new List<List<Field>>();
             foreach (var pamRow in pamFile)
             {
                 try
@@ -764,8 +783,13 @@ namespace PAM2FASAMS
                 catch (Exception ex)
                 {
                     WriteErrorLog(ex, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                    pamErrors.Add(pamRow);
                 }
                 rowNum++;
+            }
+            if (pamErrors.Count > 0)
+            {
+                WritePAMErrorFile(inputFile, pamErrors);
             }
             Console.WriteLine("Completed Conversion of PAM SA DCHRG file.");
         }
@@ -794,6 +818,7 @@ namespace PAM2FASAMS
             var pValidations = new PAMValidations();
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
+            List<List<Field>> pamErrors = new List<List<Field>>();
             foreach (var pamRow in pamFile)
             {
                 try
@@ -1431,8 +1456,13 @@ namespace PAM2FASAMS
                 catch (Exception ex)
                 {
                     WriteErrorLog(ex, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                    pamErrors.Add(pamRow);
                 }
                 rowNum++;
+            }
+            if (pamErrors.Count > 0)
+            {
+                WritePAMErrorFile(inputFile, pamErrors);
             }
             Console.WriteLine("Completed Conversion of PAM PERF file.");
         }
@@ -1462,6 +1492,7 @@ namespace PAM2FASAMS
             var pValidations = new PAMValidations();
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
+            var pamErrors = new List<List<Field>>();
             foreach (var pamRow in pamFile)
             {
                 try
@@ -1631,8 +1662,13 @@ namespace PAM2FASAMS
                 catch (Exception ex)
                 {
                     WriteErrorLog(ex, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                    pamErrors.Add(pamRow);
                 }
                 rowNum++;
+            }
+            if (pamErrors.Count > 0)
+            {
+                WritePAMErrorFile(inputFile, pamErrors);
             }
             Console.WriteLine("Completed Conversion of PAM CFARS file.");
         }
@@ -1662,6 +1698,7 @@ namespace PAM2FASAMS
             var pValidations = new PAMValidations();
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
+            List<List<Field>> pamErrors = new List<List<Field>>();
             foreach (var pamRow in pamFile)
             {
                 try
@@ -1831,8 +1868,13 @@ namespace PAM2FASAMS
                 catch (Exception ex)
                 {
                     WriteErrorLog(ex, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                    pamErrors.Add(pamRow);
                 }
                 rowNum++;
+            }
+            if (pamErrors.Count > 0)
+            {
+                WritePAMErrorFile(inputFile, pamErrors);
             }
             Console.WriteLine("Completed Conversion of PAM FARS file.");
         }
@@ -1863,6 +1905,7 @@ namespace PAM2FASAMS
             var pValidations = new PAMValidations();
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
+            List<List<Field>> pamErrors = new List<List<Field>>();
             foreach (var pamRow in pamFile)
             {
                 try
@@ -2038,8 +2081,13 @@ namespace PAM2FASAMS
                 catch (Exception ex)
                 {
                     WriteErrorLog(ex, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                    pamErrors.Add(pamRow);
                 }
                 rowNum++;
+            }
+            if (pamErrors.Count > 0)
+            {
+                WritePAMErrorFile(inputFile, pamErrors);
             }
             Console.WriteLine("Completed Conversion of PAM ASAM file.");
         }
@@ -2069,6 +2117,7 @@ namespace PAM2FASAMS
             var pValidations = new PAMValidations();
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
+            List<List<Field>> pamErrors = new List<List<Field>>();
             foreach (var pamRow in pamFile)
             {
                 try
@@ -2184,8 +2233,13 @@ namespace PAM2FASAMS
                 catch (Exception ex)
                 {
                     WriteErrorLog(ex, "ServiceEventDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                    pamErrors.Add(pamRow);
                 }
                 rowNum++;
+            }
+            if (pamErrors.Count > 0)
+            {
+                WritePAMErrorFile(inputFile, pamErrors);
             }
             Console.WriteLine("Completed Conversion of PAM SERV file.");
         }
@@ -2213,6 +2267,7 @@ namespace PAM2FASAMS
             int rowNum = 1;
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
+            List<List<Field>> pamErrors = new List<List<Field>>();
             foreach (var pamRow in pamFile)
             {
                 try
@@ -2305,8 +2360,13 @@ namespace PAM2FASAMS
                 catch (Exception ex)
                 {
                     WriteErrorLog(ex, "ServiceEventDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum);
+                    pamErrors.Add(pamRow);
                 }
                 rowNum++;
+            }
+            if (pamErrors.Count > 0)
+            {
+                WritePAMErrorFile(inputFile, pamErrors);
             }
             Console.WriteLine("Completed Conversion of PAM EVNT file.");
         }
@@ -2403,6 +2463,38 @@ namespace PAM2FASAMS
 
             //Return all of our records.
             return records;
+        }
+        private void WritePAMErrorFile(string inputFileName, List<List<Field>> errors)
+        {
+            foreach(var error in errors)
+            {
+                WritePAMErrorFile(inputFileName, error);
+            }
+        }
+        private void WritePAMErrorFile(string inputFileName, List<Field> error)
+        {
+            string fileName = inputFileName + "-Errors.txt";
+            using (StreamWriter writer = new StreamWriter(fileName, true))
+            {
+                
+                var sortedList = error.OrderBy(e => e.Start);
+                int lineLength = sortedList.Last().Start + sortedList.Last().Length;
+                StringBuilder line = new StringBuilder(lineLength);
+                foreach (var item in sortedList)
+                {
+                    if (string.IsNullOrWhiteSpace(item.Value))
+                    {
+                        line.Insert(item.Start, "".PadRight(item.Length, ' '));
+                    }
+                    else
+                    {
+                        line.Insert(item.Start, item.Value);
+                    }
+                }
+                writer.WriteLine(line.ToString());
+                writer.Close();
+
+            }
         }
         private void WriteXml(object dataStructure, string outputFile, string outputFileName, string outputPath)
         {

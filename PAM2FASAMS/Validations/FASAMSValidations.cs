@@ -423,7 +423,7 @@ namespace PAM2FASAMS
                     return null;
             }
         }
-        //public static string ValidateEvalToolRLvl(FileType type, List<Field> fields)
+        //public string ValidateEvalToolRLvl(FileType type, List<Field> fields)
         //{
         //    switch (type)
         //    {
@@ -475,7 +475,7 @@ namespace PAM2FASAMS
         //            return null;
         //    }
         //}
-        //public static string ValidateEvalToolALvl(FileType type, List<Field> fields)
+        //public string ValidateEvalToolALvl(FileType type, List<Field> fields)
         //{
         //    switch (type)
         //    {
