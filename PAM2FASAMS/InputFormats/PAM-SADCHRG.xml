@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<FileMap>
+  <Field Name="ContractorID" Start="0" Length="10"/>
+  <Field Name="SiteId" Start="10" Length="2" />
+  <Field Name="SSN" Start="12" Length="9"/>
+  <Field Name="ClientID" Start="21" Length="10"/>
+  <Field Name="CntyResid" Start="31" Length="2"/>
+  <Field Name="Grade" Start="33" Length="2"/>
+  <Field Name="Marital" Start="35" Length="1"/>
+  <Field Name="HlthStat" Start="36" Length="1"/>
+  <Field Name="PregTrim" Start="37" Length="1"/>
+  <Field Name="AdmiType" Start="38" Length="1"/>
+  <Field Name="DrugCrt" Start="39" Length="1"/>
+  <Field Name="ChildWel" Start="40" Length="1"/>
+  <Field Name="ResidStat" Start="41" Length="2"/>
+  <Field Name="DepCrimS" Start="43" Length="2"/>
+  <Field Name="ProbPrim" Start="45" Length="2"/>
+  <Field Name="ProbSec" Start="47" Length="2"/>
+  <Field Name="ProbTer" Start="49" Length="2"/>
+  <Field Name="RoutPrim" Start="51" Length="1"/>
+  <Field Name="RoutSec" Start="52" Length="1"/>
+  <Field Name="RoutTer" Start="53" Length="1"/>
+  <Field Name="FreqPrim" Start="54" Length="1"/>
+  <Field Name="FreqSec" Start="55" Length="1"/>
+  <Field Name="FreqTer" Start="56" Length="1"/>
+  <Field Name="AgePrim" Start="57" Length="2"/>
+  <Field Name="AgeSec" Start="59" Length="2"/>
+  <Field Name="AgeTer" Start="61" Length="2"/>
+  <Field Name="StaffId" Start="63" Length="12"/> 
+  <Field Name="Purpose" Start="75" Length="1"/>
+  <Field Name="EvalDate" Start="76" Length="8"/>
+  <Field Name="ChildPrev" Start="84" Length="1"/>
+  <Field Name="DrugHarm" Start="85" Length="1"/>
+  <Field Name="AlcoHarm" Start="86" Length="1"/>
+  <Field Name="TobaHarm" Start="87" Length="1"/>
+  <Field Name="TobacUse" Start="88" Length="1"/>
+  <Field Name="FutUse" Start="89" Length="1"/>
+  <Field Name="FriendUse" Start="90" Length="1"/>
+  <Field Name="InitEvada" Start="91" Length="8"/>
+  <Field Name="Empl" Start="99" Length="2"/>
+  <Field Name="DReason" Start="101" Length="2"/>
+  <Field Name="DOutcome" Start="103" Length="2"/>
+
+  <Field Name="Survey" Start="127" Length="613"/>
+  <Field Name="ProvInfo" Start="740" Length="20"/>
+  <Field Name="DrugFree" Start="760" Length="1"/>
+  <Field Name="ProvId" Start="761" Length="10"/>
+  <Field Name="SaDiag" Start="771" Length="6"/>
+  <Field Name="MhDiag" Start="777" Length="6"/>
+  <Field Name="Retired1" Start="783" Length="1"/>
+  <Field Name="ContNum1" Start="784" Length="5"/>
+  <Field Name="ContNum2" Start="789" Length="5"/>
+  <Field Name="ContNum3" Start="794" Length="5"/>
+  <Field Name="Social" Start="799" Length="2"/>
+  <Field Name="School" Start="801" Length="1"/>
+  <Field Name="Arrest" Start="802" Length="2"/>
+  <Field Name="SaDiag10" Start="804" Length="8"/>
+  <Field Name="MhDiag10" Start="812" Length="8"/>
+</FileMap>

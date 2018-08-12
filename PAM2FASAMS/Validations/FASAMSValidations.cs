@@ -281,7 +281,18 @@ namespace PAM2FASAMS
             string[] substring = pamId.Split(delimiter);
             return substring[1];
         }
-        public string ValidateIncomeAvailable(string pamData)
+        public static string ValidateWaitingDaysAvailable(string pamData)
+        {
+            if (String.IsNullOrWhiteSpace(pamData))
+            {
+                return "0";
+            }
+            else
+            {
+                return "1";
+            }
+        }
+        public static string ValidateIncomeAvailable(string pamData)
         {
             if (String.IsNullOrWhiteSpace(pamData))
             {
@@ -388,17 +399,96 @@ namespace PAM2FASAMS
                     }
                 case FileType.FARS:
                     {
-                        return null;
-                    }
-                case FileType.ASAM:
-                    {
-                        return null;
+                        int saHist = int.Parse(fields.Where(r => r.Name == "SAHist").Single().Value.Trim());
+                        int depress = int.Parse(fields.Where(r => r.Name == "Depress").Single().Value.Trim());
+                        int anxiety = int.Parse(fields.Where(r => r.Name == "Anxiety").Single().Value.Trim());
+                        int hyperAct = int.Parse(fields.Where(r => r.Name == "HyperAct").Single().Value.Trim());
+                        int thought = int.Parse(fields.Where(r => r.Name == "Thought").Single().Value.Trim());
+                        int cognitiv = int.Parse(fields.Where(r => r.Name == "Cognitiv").Single().Value.Trim());
+                        int medical = int.Parse(fields.Where(r => r.Name == "Medical").Single().Value.Trim());
+                        int traumati = int.Parse(fields.Where(r => r.Name == "Traumati").Single().Value.Trim());
+                        int substanc = int.Parse(fields.Where(r => r.Name == "Substanc").Single().Value.Trim());
+                        int relation = int.Parse(fields.Where(r => r.Name == "Relation").Single().Value.Trim());
+                        int famRela = int.Parse(fields.Where(r => r.Name == "FamRela").Single().Value.Trim());
+                        int famEnvi = int.Parse(fields.Where(r => r.Name == "FamEnvi").Single().Value.Trim());
+                        int aDLFunct = int.Parse(fields.Where(r => r.Name == "ADLFunct").Single().Value.Trim());
+                        int selfCare = int.Parse(fields.Where(r => r.Name == "SelfCare").Single().Value.Trim());
+                        int workScho = int.Parse(fields.Where(r => r.Name == "WorkScho").Single().Value.Trim());
+                        int dangSelf = int.Parse(fields.Where(r => r.Name == "DangSelf").Single().Value.Trim());
+                        int dangOth = int.Parse(fields.Where(r => r.Name == "DangOth").Single().Value.Trim());
+                        int security = int.Parse(fields.Where(r => r.Name == "Security").Single().Value.Trim());
+                        return (saHist + depress + anxiety + hyperAct + thought + cognitiv + medical + traumati + substanc + relation + famRela + famEnvi + aDLFunct + selfCare + workScho + dangSelf + dangOth + security).ToString();
                     }
                 default:
                     return null;
             }
         }
-        public string ValidateDischargeReasonCode(string pamData)
+        //public static string ValidateEvalToolRLvl(FileType type, List<Field> fields)
+        //{
+        //    switch (type)
+        //    {
+        //        case FileType.ASAM:
+        //            {
+        //                string SAProgram = (fields.Where(r => r.Name == "SAProgram").Single().Value);
+        //                string lvl = (fields.Where(r => r.Name == "RecommendLvl").Single().Value);
+        //                switch (SAProgram)
+        //                {
+        //                    case "2":
+        //                        {
+        //                            switch (lvl)
+        //                            {
+        //                                case "14": return "1";
+        //                                case "11": return "2";
+        //                                case "09": return "3";
+        //                                case "12": return "4";
+        //                                case "01": return "5";
+        //                                case "02": return "6";
+        //                                case "03": return "7";
+        //                                case "": return "9";
+        //                                case "": return "11";
+        //                                case "07": return "12";
+        //                                case "": return "13";
+        //                                case "": return "14";
+        //                                case "": return "15";
+        //                                case "": return "16";
+        //                                case "17": return "17";
+        //                                default:
+        //                                    return null;
+        //                            }
+        //                        }
+        //                    case "4":
+        //                        {
+        //                            switch (lvl)
+        //                            {
+        //                                case "14": return "1";
+        //                                case "11": return "2";
+
+        //                                default:
+        //                                    return null;
+        //                            }
+        //                        }
+        //                    default:
+        //                        return null;
+        //                }
+        //            }
+        //        default:
+        //            return null;
+        //    }
+        //}
+        //public static string ValidateEvalToolALvl(FileType type, List<Field> fields)
+        //{
+        //    switch (type)
+        //    {
+        //        case FileType.ASAM:
+        //            {
+        //                string SAProgram = (fields.Where(r => r.Name == "SAProgram").Single().Value);
+        //                string lvl = (fields.Where(r => r.Name == "ActualLvl").Single().Value);
+        //            }
+        //        default:
+        //            return null;
+        //    }
+        //}
+        public static string ValidateDischargeReasonCode(string pamData)
         {
             if (!string.IsNullOrWhiteSpace(pamData))
             {
