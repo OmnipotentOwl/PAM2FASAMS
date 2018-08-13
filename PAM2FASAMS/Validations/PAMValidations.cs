@@ -22,6 +22,12 @@ namespace PAM2FASAMS
             Admission,
             ImDischarge
         }
+        public enum ServiceEventType
+        {
+            Unknown,
+            Service,
+            Event
+        }
         public UpdateType ValidateEvalPurpose(FileType type, string purpose)
         {
             switch (type)

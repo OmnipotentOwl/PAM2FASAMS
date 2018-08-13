@@ -12,7 +12,8 @@ namespace PAM2FASAMS.Utilities
 {
     public class DataTools
     {
-        public TreatmentEpisode OpportuniticlyLoadTreatmentSession(TreatmentEpisodeDataSet currentJob, UpdateType type, string recordDate, string clientSourceRecordIdentifier, string federalTaxIdentifier)
+        public TreatmentEpisode OpportuniticlyLoadTreatmentSession(TreatmentEpisodeDataSet currentJob, UpdateType type, string recordDate, 
+            string clientSourceRecordIdentifier, string federalTaxIdentifier)
         {
             DateTime date = DateTime.Parse(recordDate);
             switch (type)
@@ -100,21 +101,28 @@ namespace PAM2FASAMS.Utilities
                         {
                             if (existing == null || existing.Count == 0)
                             {
-                                return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = clientSourceRecordIdentifier, FederalTaxIdentifier = federalTaxIdentifier, Admissions = new List<Admission>() }; ;
+                                return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                    ClientSourceRecordIdentifier = clientSourceRecordIdentifier,
+                                    FederalTaxIdentifier = federalTaxIdentifier,
+                                    Admissions = new List<Admission>() }; ;
                             }
                             if (existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge == null)))
                             {
                                 return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge == null)).LastOrDefault();
                             }
-                            if (existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.Discharge.TypeCode == "1")))
+                            bool predicate1(Admission a) => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date;
+                            if (existing.Any(t => t.Admissions.Any(a => predicate1(a) && a.Discharge.TypeCode == "1")))
                             {
-                                return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.Discharge.TypeCode == "1")).LastOrDefault();
+                                return existing.Where(t => t.Admissions.Any(a => predicate1(a) && a.Discharge.TypeCode == "1")).LastOrDefault();
                             }
-                            if (existing.Any(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.Discharge.TypeCode == "2")))
+                            if (existing.Any(t => t.Admissions.Any(a => predicate1(a) && a.Discharge.TypeCode == "2")))
                             {
-                                return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.Discharge.TypeCode == "2")).LastOrDefault();
+                                return existing.Where(t => t.Admissions.Any(a => predicate1(a) && a.Discharge.TypeCode == "2")).LastOrDefault();
                             }
-                            return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = clientSourceRecordIdentifier, FederalTaxIdentifier = federalTaxIdentifier, Admissions = new List<Admission>() }; ;
+                            return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                ClientSourceRecordIdentifier = clientSourceRecordIdentifier,
+                                FederalTaxIdentifier = federalTaxIdentifier,
+                                Admissions = new List<Admission>() }; ;
                         }
                     case TreatmentEpisodeType.ImDischarge:
                         {
@@ -124,13 +132,19 @@ namespace PAM2FASAMS.Utilities
                             //DateTime upperSearchRange = date.AddDays(daysToSearch);
                             if (existing == null || existing.Count == 0)
                             {
-                                return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = clientSourceRecordIdentifier, FederalTaxIdentifier = federalTaxIdentifier, ImmediateDischarges = new List<ImmediateDischarge>() }; ;
+                                return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                    ClientSourceRecordIdentifier = clientSourceRecordIdentifier,
+                                    FederalTaxIdentifier = federalTaxIdentifier,
+                                    ImmediateDischarges = new List<ImmediateDischarge>() }; ;
                             }
                             if (existing.Any(t => t.ImmediateDischarges.Any(i => i.InternalEvaluationDate == date)))
                             {
                                 return existing.Where(t => t.ImmediateDischarges.Any(i => i.InternalEvaluationDate == date)).FirstOrDefault();
                             }
-                            return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = clientSourceRecordIdentifier, FederalTaxIdentifier = federalTaxIdentifier, ImmediateDischarges = new List<ImmediateDischarge>() }; ;
+                            return new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                ClientSourceRecordIdentifier = clientSourceRecordIdentifier,
+                                FederalTaxIdentifier = federalTaxIdentifier,
+                                ImmediateDischarges = new List<ImmediateDischarge>() }; ;
                         }
                     default:
                         return null;
@@ -228,13 +242,15 @@ namespace PAM2FASAMS.Utilities
                 {
                     return new Admission { SourceRecordIdentifier = Guid.NewGuid().ToString(), Evaluations = new List<Evaluation>(), Diagnoses = new List<Diagnosis>() };
                 }
-                if(existing.Any(a=>a.InternalAdmissionDate <= date && a.Discharge == null))
+                bool predicate1(Admission a) => a.InternalAdmissionDate <= date && a.Discharge == null;
+                if (existing.Any(predicate1))
                 {
-                    return existing.Where(a => a.InternalAdmissionDate <= date && a.Discharge == null).FirstOrDefault();
+                    return existing.Where(predicate1).FirstOrDefault();
                 }
-                if (existing.Any(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date))
+                bool predicate2(Admission a) => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date;
+                if (existing.Any(predicate2))
                 {
-                    return existing.Where(a => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date).FirstOrDefault();
+                    return existing.Where(predicate2).FirstOrDefault();
                 }
                 return new Admission { SourceRecordIdentifier = Guid.NewGuid().ToString(), Evaluations = new List<Evaluation>(), Diagnoses = new List<Diagnosis>() };
             }
@@ -407,6 +423,78 @@ namespace PAM2FASAMS.Utilities
                 }
                 return null;
             }
+        }
+        public ServiceEvent OpportuniticlyLoadServiceEvent(ServiceEvents currentJob, ServiceEventType type, ServiceEvent service)
+        {
+            return OpportuniticlyLoadServiceEvent(type, service);
+        }
+        public ServiceEvent OpportuniticlyLoadServiceEvent(ServiceEventType type, ServiceEvent service)
+        {
+            switch (type)
+            {
+                case ServiceEventType.Service:
+                    {
+                        using (var db = new fasams_db())
+                        {
+                            List<ServiceEvent> existing = db.ServiceEvents
+                                .Include(x => x.ServiceEventCoveredServiceModifiers)
+                                .Include(x => x.ServiceEventHcpcsProcedureModifiers)
+                                .Include(x => x.ServiceEventExpenditureModifiers)
+                                .Where(s => s.TypeCode == "1" && s.AdmissionSourceRecordIdentifier == service.AdmissionSourceRecordIdentifier 
+                                && s.EpisodeSourceRecordIdentifier == service.EpisodeSourceRecordIdentifier)
+                                .ToList();
+                            if (existing == null || existing.Count == 0)
+                            {
+                                return new ServiceEvent {
+                                    ServiceEventCoveredServiceModifiers = new List<ServiceEventCoveredServiceModifier>(),
+                                    ServiceEventHcpcsProcedureModifiers = new List<ServiceEventHcpcsProcedureModifier>(),
+                                    ServiceEventExpenditureModifiers = new List<ServiceEventExpenditureModifier>()
+                                };
+                            }
+                            return new ServiceEvent {
+                                ServiceEventCoveredServiceModifiers = new List<ServiceEventCoveredServiceModifier>(),
+                                ServiceEventHcpcsProcedureModifiers = new List<ServiceEventHcpcsProcedureModifier>(),
+                                ServiceEventExpenditureModifiers = new List<ServiceEventExpenditureModifier>()
+                            }; ;
+                        }
+                    }
+                case ServiceEventType.Event:
+                    {
+                        using (var db = new fasams_db())
+                        {
+                            List<ServiceEvent> existing = db.ServiceEvents
+                                .Include(x => x.ServiceEventCoveredServiceModifiers)
+                                .Include(x => x.ServiceEventHcpcsProcedureModifiers)
+                                .Include(x => x.ServiceEventExpenditureModifiers)
+                                .Where(s => s.TypeCode == "2" && s.FederalTaxIdentifier == service.FederalTaxIdentifier && s.ContractNumber == service.ContractNumber 
+                                && s.SubcontractNumber == service.SubcontractNumber)
+                                .ToList();
+                            if (existing == null || existing.Count == 0)
+                            {
+                                return new ServiceEvent {
+                                    ServiceEventCoveredServiceModifiers = new List<ServiceEventCoveredServiceModifier>(),
+                                    ServiceEventHcpcsProcedureModifiers = new List<ServiceEventHcpcsProcedureModifier>(),
+                                    ServiceEventExpenditureModifiers = new List<ServiceEventExpenditureModifier>() };
+                            }
+                            bool predicate1(ServiceEvent s) => s.SiteIdentifier == service.SiteIdentifier && s.CoveredServiceCode == service.CoveredServiceCode 
+                                && s.HcpcsProcedureCode == service.HcpcsProcedureCode && s.ServiceDate == service.ServiceDate && s.ServiceCountyAreaCode == service.ServiceCountyAreaCode 
+                                && s.StaffEducationLevelCode == service.StaffEducationLevelCode && s.StaffIdentifier == service.StaffIdentifier 
+                                && s.TreatmentSettingCode == service.TreatmentSettingCode;
+                            if (existing.Any(predicate1))
+                            {
+                                return existing.Where(predicate1).LastOrDefault();
+                            }
+                            return new ServiceEvent {
+                                ServiceEventCoveredServiceModifiers = new List<ServiceEventCoveredServiceModifier>(),
+                                ServiceEventHcpcsProcedureModifiers = new List<ServiceEventHcpcsProcedureModifier>(),
+                                ServiceEventExpenditureModifiers = new List<ServiceEventExpenditureModifier>()
+                            }; ;
+                        }
+                    }
+                default:
+                    return null;
+            }
+            
         }
         public void UpsertProviderClient(ProviderClient providerClient)
         {

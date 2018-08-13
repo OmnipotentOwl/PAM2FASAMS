@@ -11,22 +11,7 @@ namespace PAM2FASAMS
 {
     public class FASAMSValidations
     {
-        public ProviderClientIdentifier ValidateClientIdentifier(string IdString)
-        {
-            ProviderClientIdentifier clientIdentifier = new ProviderClientIdentifier();
-            string sudoSSPattern = "^[A-Z]{3}";
-            if (Regex.IsMatch(IdString, sudoSSPattern))
-            {
-                clientIdentifier.TypeCode = "3";
-                clientIdentifier.Identifier = IdString;
-            }
-            else
-            {
-                clientIdentifier.TypeCode = "1";
-                clientIdentifier.Identifier = IdString;
-            }
-            return clientIdentifier;
-        }
+        #region Processing Functions
         public void ProcessProviderClientIdentifiers(ProviderClient client, ProviderClientIdentifier identifier)
         {
             if(client.ProviderClientIdentifiers.Exists(i=> i.TypeCode == identifier.TypeCode))
@@ -263,6 +248,187 @@ namespace PAM2FASAMS
                 diag.Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier;
                 discharge.Diagnoses.Add(diag);
             }
+        }
+        #endregion
+        #region Creation Functions
+        public ServiceEvent CreateServiceEvent(PAMValidations.ServiceEventType type, List<Field> pamRow, string recordDate, Subcontract contract, TreatmentEpisode treatmentEpisode, Admission admission, ProviderClient client)
+        {
+            ServiceEvent service = new ServiceEvent
+            {
+                ServiceEventCoveredServiceModifiers = new List<ServiceEventCoveredServiceModifier>(),
+                ServiceEventHcpcsProcedureModifiers = new List<ServiceEventHcpcsProcedureModifier>(),
+                ServiceEventExpenditureModifiers = new List<ServiceEventExpenditureModifier>()
+            };
+            var pValidations = new PAMValidations();
+            switch (type)
+            {
+                case PAMValidations.ServiceEventType.Service:
+                    {
+                        string contNum = null; //this may change depending on feedback from ME
+                        string subcontNum = (pamRow.Where(r => r.Name == "ContNum1").Single().Value); //this may change depending on feedback from ME
+                        string progCode = ValidateAdmissionProgramCode((pamRow.Where(r => r.Name == "ProgType").Single().Value), client.BirthDate, recordDate); //this may change depending on feedback from ME
+                        string covrdSvc = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
+                        var setting = pamRow.Where(r => r.Name == "Setting").Single().Value;
+                        service.SourceRecordIdentifier = Guid.NewGuid().ToString();
+                        service.TypeCode = "1";
+                        service.FederalTaxIdentifier = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
+                        service.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
+                        service.ContractNumber = contract?.ContractNumber;
+                        service.SubcontractNumber = subcontNum;
+                        service.EpisodeSourceRecordIdentifier = treatmentEpisode.SourceRecordIdentifier;
+                        service.AdmissionSourceRecordIdentifier = admission.SourceRecordIdentifier;
+                        service.ProgramAreaCode = progCode;
+                        service.TreatmentSettingCode = ValidateTreatmentSettingCodeFromCoveredServiceCode((pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value).Trim());
+                        service.StaffEducationLevelCode = ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
+                        service.StaffIdentifier = ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
+                        service.CoveredServiceCode = covrdSvc;
+                        if (pValidations.ValidateCoverdServiceCodeLocation(covrdSvc, setting) != null)
+                        {
+                            service.CoveredServiceCode = pValidations.ValidateCoverdServiceCodeLocation(covrdSvc, setting);
+                        }
+                        service.HcpcsProcedureCode = (pamRow.Where(r => r.Name == "ProcCode").Single().Value);
+                        service.ServiceDate = recordDate;
+                        service.StartTime = (pamRow.Where(r => r.Name == "BeginTime").Single().Value).Trim();
+                        service.ExpenditureOcaCode = ValidateExpenditureOcaCodeFromContract(contract, recordDate, service.CoveredServiceCode, progCode);
+                        service.ServiceUnitCount = uint.Parse(pamRow.Where(r => r.Name == "Unit").Single().Value);
+                        service.FundCode = (pamRow.Where(r => r.Name == "Fund").Single().Value);
+                        service.ServiceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyServ").Single().Value);
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier1").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
+                        {
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier1").Single().Value.Trim()
+                            };
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier2").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
+                        {
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier2").Single().Value.Trim()
+                            };
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier3").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
+                        {
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier3").Single().Value.Trim()
+                            };
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier4").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
+                        {
+                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier4").Single().Value.Trim()
+                            };
+                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
+                        }
+                        return service;
+                    }
+                case PAMValidations.ServiceEventType.Event:
+                    {
+                        return CreateServiceEvent(type,pamRow,recordDate,contract);
+                    }
+                default:
+                    return service;
+            }
+            
+        }
+        public ServiceEvent CreateServiceEvent(PAMValidations.ServiceEventType type, List<Field> pamRow, string recordDate, Subcontract contract)
+        {
+            ServiceEvent service = new ServiceEvent
+            {
+                ServiceEventCoveredServiceModifiers = new List<ServiceEventCoveredServiceModifier>(),
+                ServiceEventHcpcsProcedureModifiers = new List<ServiceEventHcpcsProcedureModifier>(),
+                ServiceEventExpenditureModifiers = new List<ServiceEventExpenditureModifier>()
+            };
+            var pValidations = new PAMValidations();
+            switch (type)
+            {
+                case PAMValidations.ServiceEventType.Service:
+                    {
+                        return null;
+                    }
+                case PAMValidations.ServiceEventType.Event:
+                    {
+                        var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
+                        string contNum = null; //this may change depending on feedback from ME
+                        string subcontNum = (pamRow.Where(r => r.Name == "ContNum1").Single().Value); //this may change depending on feedback from ME
+                        service.SourceRecordIdentifier = Guid.NewGuid().ToString();
+                        service.TypeCode = "2";
+                        service.FederalTaxIdentifier = fedTaxId;
+                        service.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
+                        service.ContractNumber = contract?.ContractNumber;
+                        service.SubcontractNumber = subcontNum;
+                        service.ProgramAreaCode = (pamRow.Where(r => r.Name == "ProgType").Single().Value); //this may change depending on feedback from ME
+                        service.TreatmentSettingCode = ValidateTreatmentSettingCodeFromCoveredServiceCode((pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value).Trim());
+                        service.StaffEducationLevelCode = ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
+                        service.StaffIdentifier = ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)); //not in spec but ME has advised it must be for State to meet data requirements.
+                        service.CoveredServiceCode = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
+                        service.HcpcsProcedureCode = (pamRow.Where(r => r.Name == "ProcCode").Single().Value);
+                        service.ServiceDate = recordDate;
+                        service.ServiceUnitCount = uint.Parse(pamRow.Where(r => r.Name == "Unit").Single().Value);
+                        service.FundCode = (pamRow.Where(r => r.Name == "Fund").Single().Value);
+                        service.ServiceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyServ").Single().Value);
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier1").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
+                        {
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier1").Single().Value.Trim()
+                            };
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier2").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
+                        {
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier2").Single().Value.Trim()
+                            };
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier3").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
+                        {
+                            ServiceEventHcpcsProcedureModifier modifier = new ServiceEventHcpcsProcedureModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier3").Single().Value.Trim()
+                            };
+                            service.ServiceEventHcpcsProcedureModifiers.Add(modifier);
+                        }
+                        if (!string.IsNullOrWhiteSpace(pamRow.Where(r => r.Name == "Modifier4").Single().Value)) // the spec is wrong based on the data that the PAM defines here according to ME CFCHS.
+                        {
+                            ServiceEventCoveredServiceModifier modifier = new ServiceEventCoveredServiceModifier
+                            {
+                                ModifierCode = pamRow.Where(r => r.Name == "Modifier4").Single().Value.Trim()
+                            };
+                            service.ServiceEventCoveredServiceModifiers.Add(modifier);
+                        }
+                        return service;
+                    }
+                default:
+                    return service;
+            }
+
+        }
+
+        #endregion
+        #region Valdations
+        public ProviderClientIdentifier ValidateClientIdentifier(string IdString)
+        {
+            ProviderClientIdentifier clientIdentifier = new ProviderClientIdentifier();
+            string sudoSSPattern = "^[A-Z]{3}";
+            if (Regex.IsMatch(IdString, sudoSSPattern))
+            {
+                clientIdentifier.TypeCode = "3";
+                clientIdentifier.Identifier = IdString;
+            }
+            else
+            {
+                clientIdentifier.TypeCode = "1";
+                clientIdentifier.Identifier = IdString;
+            }
+            return clientIdentifier;
         }
         public string ValidateFASAMSDate(string dateRaw)
         {
@@ -710,6 +876,8 @@ namespace PAM2FASAMS
             }
             return "ContractError";
         }
+        #endregion
+        #region Internal Functions
         /// <summary>  
         /// For calculating only age  
         /// </summary>  
@@ -739,5 +907,6 @@ namespace PAM2FASAMS
 
             return age;
         }
+        #endregion
     }
 }
