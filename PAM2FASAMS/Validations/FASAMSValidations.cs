@@ -49,6 +49,20 @@ namespace PAM2FASAMS
                     }
                 case "2":
                     {
+                        if (episode.Admissions.Any(a => a.TypeCode == "2"))
+                            if (episode.Admissions.Any(a => a.SourceRecordIdentifier == admission.SourceRecordIdentifier))
+                            {
+                                //same record so just replace it.
+                                var existingItem = episode.Admissions.Where(a => a.SourceRecordIdentifier == admission.SourceRecordIdentifier).FirstOrDefault();
+                                int id = episode.Admissions.IndexOf(existingItem);
+                                episode.Admissions[id] = admission;
+                                return;
+                            }
+                            else
+                            {
+                                return;
+                            }
+                        episode.Admissions.Add(admission);
                         return;
                     }
                 default:
@@ -411,7 +425,34 @@ namespace PAM2FASAMS
             }
 
         }
+        public Discharge CreateTransferDischarge(string recordDate)
+        {
+            Discharge discharge = new Discharge();
+            discharge.SourceRecordIdentifier = Guid.NewGuid().ToString();
+            discharge.TypeCode = "1";
+            discharge.DischargeDate = recordDate;
+            discharge.LastContactDate = recordDate;
+            discharge.DischargeReasonCode = "4";
 
+            return discharge;
+        }
+        public Admission CreateTransferAdmission(string recordDate, Subcontract contract, TreatmentEpisode treatmentEpisode, string treatmentSetting, Admission previousAdmit)
+        {
+            Admission admission = new Admission();
+            admission.SourceRecordIdentifier = Guid.NewGuid().ToString();
+            admission.TypeCode = "2";
+            admission.ContractNumber = contract.ContractNumber;
+            admission.SubcontractNumber = contract.SubcontractNumber;
+            admission.AdmissionDate = recordDate;
+            admission.TreatmentSettingCode = treatmentSetting;
+            admission.ProgramAreaCode = previousAdmit.ProgramAreaCode;
+            admission.IsCodependentCode = previousAdmit.IsCodependentCode;
+            admission.ReferralSourceCode = previousAdmit.ReferralSourceCode;
+            admission.PriorityPopulationCode = previousAdmit.PriorityPopulationCode;
+            admission.TreatmentSourceId = treatmentEpisode.SourceRecordIdentifier;
+
+            return admission;
+        }
         #endregion
         #region Valdations
         public ProviderClientIdentifier ValidateClientIdentifier(string IdString)

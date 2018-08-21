@@ -225,6 +225,36 @@ namespace PAM2FASAMS.Utilities
                     return null;
             }
         }
+        public Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, string recordDate, string treatmentSetting)
+        {
+            DateTime date = DateTime.Parse(recordDate);
+            using (var db = new fasams_db())
+            {
+                List<Admission> existing = db.Admissions
+                    .Include(x => x.PerformanceOutcomeMeasures.Select(p => p.SubstanceUseDisorders))
+                    .Include(x => x.Evaluations)
+                    .Include(x => x.Diagnoses)
+                    .Include(x => x.Discharge)
+                    .Where(a => a.TreatmentSourceId == episode.SourceRecordIdentifier)
+                    .ToList();
+
+                if (existing == null || existing.Count == 0)
+                {
+                    return new Admission { SourceRecordIdentifier = Guid.NewGuid().ToString(), Evaluations = new List<Evaluation>(), Diagnoses = new List<Diagnosis>() };
+                }
+                bool predicate1(Admission a) => a.InternalAdmissionDate <= date && a.Discharge == null && a.TreatmentSettingCode == treatmentSetting;
+                if (existing.Any(predicate1))
+                {
+                    return existing.Where(predicate1).FirstOrDefault();
+                }
+                bool predicate2(Admission a) => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.TreatmentSettingCode == treatmentSetting;
+                if (existing.Any(predicate2))
+                {
+                    return existing.Where(predicate2).FirstOrDefault();
+                }
+                return OpportuniticlyLoadAdmission(episode, recordDate);
+            }
+        }
         public Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, string recordDate)
         {
             DateTime date = DateTime.Parse(recordDate);
@@ -496,6 +526,20 @@ namespace PAM2FASAMS.Utilities
             }
             
         }
+        public List<JobLog> LoadPendingJobs()
+        {
+            using (var db = new fasams_db())
+            {
+                return db.JobLogs.Where(j => j.UpdatedAt == null).ToList();
+            }
+        }
+        public int GetMaxJobNumber()
+        {
+            using (var db = new fasams_db())
+            {
+                return db.JobLogs.Select(j => j.JobNumber).DefaultIfEmpty(0).Max();
+            }
+        }
         public void UpsertProviderClient(ProviderClient providerClient)
         {
             using(var db = new fasams_db())
@@ -544,6 +588,7 @@ namespace PAM2FASAMS.Utilities
                 }
                 db.SaveChanges();
             }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "CL", SourceRecordId = providerClient.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
         }
         public void UpsertTreatmentSession(TreatmentEpisode treatmentEpisode)
         {
@@ -701,6 +746,7 @@ namespace PAM2FASAMS.Utilities
                 }
                 db.SaveChanges();
             }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "TE", SourceRecordId = treatmentEpisode.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
         }
         public void UpsertServiceEvent(ServiceEvent serviceEvent)
         {
@@ -743,6 +789,7 @@ namespace PAM2FASAMS.Utilities
                 }
                 db.SaveChanges();
             }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "SE", SourceRecordId = serviceEvent.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
         }
         public void UpsertSubContract(Subcontract subcontract)
         {
@@ -752,7 +799,8 @@ namespace PAM2FASAMS.Utilities
                     .Include(x => x.SubcontractServices)
                     .Include(x => x.SubcontractOutputMeasures)
                     .Include(x => x.SubcontractOutcomeMeasures)
-                    .SingleOrDefault(s => s.ContractNumber == subcontract.ContractNumber && s.SubcontractNumber == subcontract.SubcontractNumber && s.AmendmentNumber == subcontract.AmendmentNumber);
+                    .SingleOrDefault(s => s.ContractNumber == subcontract.ContractNumber 
+                    && s.SubcontractNumber == subcontract.SubcontractNumber && s.AmendmentNumber == subcontract.AmendmentNumber);
 
                 if (existing == null)
                 {
@@ -838,6 +886,24 @@ namespace PAM2FASAMS.Utilities
                             }
                         }
                     }
+                }
+                db.SaveChanges();
+            }
+        }
+        public void UpsertJobLog(JobLog job)
+        {
+            using(var db = new fasams_db())
+            {
+                JobLog existing = db.JobLogs
+                    .SingleOrDefault(j => j.JobNumber == job.JobNumber && j.RecordType == job.RecordType && j.SourceRecordId == job.SourceRecordId);
+
+                if(existing == null)
+                {
+                    db.JobLogs.Add(job);
+                }
+                else
+                {
+                    db.Entry(existing).CurrentValues.SetValues(job);
                 }
                 db.SaveChanges();
             }

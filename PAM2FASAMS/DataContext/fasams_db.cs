@@ -54,5 +54,7 @@ namespace PAM2FASAMS.DataContext
         public virtual DbSet<SubcontractOutputMeasure> SubcontractOutputMeasures { get; set; }
         public virtual DbSet<SubcontractOutcomeMeasure> SubcontractOutcomeMeasures { get; set; }
 
+        public virtual DbSet<JobLog> JobLogs { get; set; }
+
     }
 }

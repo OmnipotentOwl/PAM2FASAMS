@@ -17,9 +17,14 @@ namespace PAM2FASAMS
 {
     public class PAMConvert
     {
+        #region Globals
+        public static int JobNumber;
+        #endregion
         #region Conversion Functions
         public void RunBatchJob(IEnumerable<InputFile> inputFiles, Options options)
         {
+            var dt = new DataTools();
+            JobNumber = dt.GetMaxJobNumber()+1;
             ProviderClients clientDataSet = new ProviderClients { clients = new List<ProviderClient>() };
             TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
             ServiceEvents serviceEventsDataSet = new ServiceEvents { serviceEvents = new List<ServiceEvent>() };
@@ -280,7 +285,7 @@ namespace PAM2FASAMS
                                         admission.ReferralSourceCode = (pamRow.Where(r => r.Name == "Referral").Single().Value);
                                         admission.TypeCode = "1";
                                         admission.ProgramAreaCode = fValidations.ValidateAdmissionProgramCode("SA", client.BirthDate, evalDate);
-                                        admission.TreatmentSettingCode = "todo"; //not sure how to calculate this based on existing data.
+                                        admission.TreatmentSettingCode = "0"; //updated by ServiceEvent Data.
                                         admission.IsCodependentCode = (pamRow.Where(r => r.Name == "Collateral").Single().Value);
                                         admission.DaysWaitingToEnterTreatmentKnownCode = fValidations.ValidateWaitingDaysAvailable((pamRow.Where(r => r.Name == "WaitDays").Single().Value));
                                         admission.DaysWaitingToEnterTreatmentNumber = ((fValidations.ValidateWaitingDaysAvailable((pamRow.Where(r => r.Name == "WaitDays").Single().Value)) == "1") ? int.Parse(pamRow.Where(r => r.Name == "WaitDays").Single().Value) : 0);
@@ -298,7 +303,7 @@ namespace PAM2FASAMS
                                         ReferralSourceCode = (pamRow.Where(r => r.Name == "Referral").Single().Value),
                                         TypeCode = "1",
                                         ProgramAreaCode = fValidations.ValidateAdmissionProgramCode("SA", client.BirthDate, evalDate),
-                                        TreatmentSettingCode = "todo", //not sure how to calculate this based on existing data.
+                                        TreatmentSettingCode = "0", //updated by ServiceEvent Data.
                                         IsCodependentCode = (pamRow.Where(r => r.Name == "Collateral").Single().Value),
                                         DaysWaitingToEnterTreatmentKnownCode = fValidations.ValidateWaitingDaysAvailable((pamRow.Where(r => r.Name == "WaitDays").Single().Value)),
                                         DaysWaitingToEnterTreatmentNumber = ((fValidations.ValidateWaitingDaysAvailable((pamRow.Where(r => r.Name == "WaitDays").Single().Value)) == "1") ? int.Parse(pamRow.Where(r => r.Name == "WaitDays").Single().Value) : 0),
@@ -862,7 +867,7 @@ namespace PAM2FASAMS
                                         admission.ReferralSourceCode = (pamRow.Where(r => r.Name == "Referral").Single().Value);
                                         admission.TypeCode = "1";
                                         admission.ProgramAreaCode = fValidations.ValidateAdmissionProgramCode("MH", client.BirthDate, evalDate);
-                                        admission.TreatmentSettingCode = "todo"; //not sure how to calculate this based on existing data.
+                                        admission.TreatmentSettingCode = "0"; //updated by ServiceEvent Data.
                                         admission.IsCodependentCode = fValidations.ValidateAdmissionCoDependent(fValidations.ValidateAdmissionProgramCode("MH", client.BirthDate, evalDate));
                                         admission.DaysWaitingToEnterTreatmentKnownCode = "0";
                                         admission.PerformanceOutcomeMeasures = new List<PerformanceOutcomeMeasure>();
@@ -879,7 +884,7 @@ namespace PAM2FASAMS
                                         ReferralSourceCode = (pamRow.Where(r => r.Name == "Referral").Single().Value),
                                         TypeCode = "1",
                                         ProgramAreaCode = fValidations.ValidateAdmissionProgramCode("MH", client.BirthDate, evalDate),
-                                        TreatmentSettingCode = "todo", //not sure how to calculate this based on existing data.
+                                        TreatmentSettingCode = "0", //updated by ServiceEvent Data.
                                         IsCodependentCode = fValidations.ValidateAdmissionCoDependent(fValidations.ValidateAdmissionProgramCode("MH", client.BirthDate, evalDate)),
                                         DaysWaitingToEnterTreatmentKnownCode = "0",
                                         PerformanceOutcomeMeasures = new List<PerformanceOutcomeMeasure>(),
@@ -2148,14 +2153,23 @@ namespace PAM2FASAMS
                        
                         string contNum = null; //this may change depending on feedback from ME
                         string subcontNum = (pamRow.Where(r => r.Name == "ContNum1").Single().Value); //this may change depending on feedback from ME
+                        string treatmentSetting = fValidations.ValidateTreatmentSettingCodeFromCoveredServiceCode((pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value).Trim());
+                        admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate, treatmentSetting);
                         var setting = pamRow.Where(r => r.Name == "Setting").Single().Value;
                         var contract = dt.OpportuniticlyLoadSubcontract(subcontNum, recordDate, fedTaxId);
+                        if(admission.TreatmentSettingCode != treatmentSetting)
+                        {
+                            TransferTreatmentLevel(treatmentEpisode,admission,contract,treatmentSetting,recordDate);
+                            admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate, treatmentSetting);
+                        }
+
                         var newService = fValidations.CreateServiceEvent(PAMValidations.ServiceEventType.Service, pamRow,recordDate,contract,treatmentEpisode,admission,client);
                         service = dt.OpportuniticlyLoadServiceEvent(PAMValidations.ServiceEventType.Service, newService);
                         if (service.SourceRecordIdentifier == null)
                         {
                             service = newService;
                         }
+
                     }
                     try
                     {
@@ -2282,6 +2296,39 @@ namespace PAM2FASAMS
         }
         #endregion
         #region internal functions
+        private void TransferTreatmentLevel(TreatmentEpisode episode, Admission admission, Subcontract contract, string newLevel, string recordDate)
+        {
+            string existingLevel = admission.TreatmentSettingCode;
+            Console.WriteLine("Automatic Transfer Invoked: {0} => {1}",existingLevel, newLevel);
+            var pValidations = new PAMValidations();
+            var fValidations = new FASAMSValidations();
+            var dt = new DataTools();
+            Discharge transferDischarge = fValidations.CreateTransferDischarge(recordDate);
+            Admission transferAdmission = fValidations.CreateTransferAdmission(recordDate, contract, episode, newLevel, admission);
+            fValidations.ProcessDischarge(admission, transferDischarge);
+            fValidations.ProcessAdmission(episode, admission);
+            fValidations.ProcessAdmission(episode, transferAdmission);
+            try
+            {
+                dt.UpsertTreatmentSession(episode);
+            }
+            catch (DbEntityValidationException ex)
+            {
+                // Retrieve the error messages as a list of strings.
+                var errorMessages = ex.EntityValidationErrors
+                        .SelectMany(x => x.ValidationErrors)
+                        .Select(x => x.ErrorMessage);
+
+                // Join the list to a single string.
+                var fullErrorMessage = string.Join(";", errorMessages);
+
+                // Combine the original exception message with the new one.
+                var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                // Throw a new DbEntityValidationException with the improved exception message.
+                throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+            }
+        }
         private static string PAMMappingFile;
         private List<Field> GetFields(string mappingFile)
         {
