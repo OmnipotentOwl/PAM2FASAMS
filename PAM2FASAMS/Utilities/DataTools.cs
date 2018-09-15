@@ -110,12 +110,12 @@ namespace PAM2FASAMS.Utilities
                             {
                                 return existing.Where(t => t.Admissions.Any(a => a.InternalAdmissionDate <= date && a.Discharge == null)).LastOrDefault();
                             }
-                            bool predicate1(Admission a) => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date;
-                            if (existing.Any(t => t.Admissions.Any(a => predicate1(a) && a.Discharge.TypeCode == "1")))
+                            bool predicate1(Admission a) => a.InternalAdmissionDate <= date && a.Discharge?.InternalDischargeDate >= date;
+                            if (existing.Any(t => t.Admissions.Any(a => predicate1(a) && a.Discharge?.TypeCode == "1")))
                             {
                                 return existing.Where(t => t.Admissions.Any(a => predicate1(a) && a.Discharge.TypeCode == "1")).LastOrDefault();
                             }
-                            if (existing.Any(t => t.Admissions.Any(a => predicate1(a) && a.Discharge.TypeCode == "2")))
+                            if (existing.Any(t => t.Admissions.Any(a => predicate1(a) && a.Discharge?.TypeCode == "2")))
                             {
                                 return existing.Where(t => t.Admissions.Any(a => predicate1(a) && a.Discharge.TypeCode == "2")).LastOrDefault();
                             }
@@ -247,7 +247,7 @@ namespace PAM2FASAMS.Utilities
                 {
                     return existing.Where(predicate1).FirstOrDefault();
                 }
-                bool predicate2(Admission a) => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date && a.TreatmentSettingCode == treatmentSetting;
+                bool predicate2(Admission a) => a.InternalAdmissionDate <= date && a.Discharge?.InternalDischargeDate >= date && a.TreatmentSettingCode == treatmentSetting;
                 if (existing.Any(predicate2))
                 {
                     return existing.Where(predicate2).FirstOrDefault();
@@ -277,7 +277,7 @@ namespace PAM2FASAMS.Utilities
                 {
                     return existing.Where(predicate1).FirstOrDefault();
                 }
-                bool predicate2(Admission a) => a.InternalAdmissionDate <= date && a.Discharge.InternalDischargeDate >= date;
+                bool predicate2(Admission a) => a.InternalAdmissionDate <= date && a.Discharge?.InternalDischargeDate >= date;
                 if (existing.Any(predicate2))
                 {
                     return existing.Where(predicate2).FirstOrDefault();
@@ -602,16 +602,19 @@ namespace PAM2FASAMS.Utilities
                 if(existing == null)
                 {
                     db.TreatmentEpisodes.Add(treatmentEpisode);
-                    if(treatmentEpisode.Admissions != null)
+                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "TE", SourceRecordId = treatmentEpisode.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                    if (treatmentEpisode.Admissions != null)
                     {
                         foreach (var row in treatmentEpisode.Admissions)
                         {
                             db.Admissions.Add(row);
-                            if(row.PerformanceOutcomeMeasures != null)
+                            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "AD", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                            if (row.PerformanceOutcomeMeasures != null)
                             {
                                 foreach (var perf in row.PerformanceOutcomeMeasures)
                                 {
                                     db.PerformanceOutcomeMeasures.Add(perf);
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "PM", SourceRecordId = perf.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                                     if (perf.SubstanceUseDisorders != null)
                                     {
                                         foreach (var sad in perf.SubstanceUseDisorders)
@@ -626,6 +629,7 @@ namespace PAM2FASAMS.Utilities
                                 foreach(var item in row.Evaluations)
                                 {
                                     db.Evaluations.Add(item);
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                                 }
                             }
                             if(row.Diagnoses != null)
@@ -633,11 +637,13 @@ namespace PAM2FASAMS.Utilities
                                 foreach (var item in row.Diagnoses)
                                 {
                                     db.Diagnoses.Add(item);
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                                 }
                             }
                             if(row.Discharge != null && row.Discharge.SourceRecordIdentifier != null)
                             {
                                 db.Discharges.Add(row.Discharge);
+                                UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DC", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                             }
                         }
                     }
@@ -645,13 +651,22 @@ namespace PAM2FASAMS.Utilities
                 else
                 {
                     db.Entry(existing).CurrentValues.SetValues(treatmentEpisode);
+                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "TE", SourceRecordId = treatmentEpisode.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                     if (treatmentEpisode.Admissions != null)
                     {
                         //db.Entry(existing.Admissions).CurrentValues.SetValues(treatmentEpisode.Admissions);
                         foreach (var row in treatmentEpisode.Admissions)
                         {
                             var exAdmit = db.Admissions.Find(row.SourceRecordIdentifier);
-                            db.Entry(exAdmit).CurrentValues.SetValues(row);
+                            if (exAdmit != null)
+                            {
+                                db.Entry(exAdmit).CurrentValues.SetValues(row);
+                            }
+                            else
+                            {
+                                db.Admissions.Add(row);
+                            }
+                            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "AD", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                             if (row.PerformanceOutcomeMeasures != null)
                             {
                                 foreach (var perf in row.PerformanceOutcomeMeasures)
@@ -665,6 +680,7 @@ namespace PAM2FASAMS.Utilities
                                     {
                                         db.PerformanceOutcomeMeasures.Add(perf);
                                     }
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "PM", SourceRecordId = perf.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                                 }
                             }
                             if (row.Evaluations != null)
@@ -680,6 +696,7 @@ namespace PAM2FASAMS.Utilities
                                     {
                                         db.Evaluations.Add(item);
                                     }
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                                 }
                             }
                             if (row.Diagnoses != null)
@@ -695,6 +712,7 @@ namespace PAM2FASAMS.Utilities
                                     {
                                         db.Diagnoses.Add(item);
                                     }
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                                 }
                             }
                             if (row.Discharge != null)
@@ -709,7 +727,8 @@ namespace PAM2FASAMS.Utilities
                                 {
                                     db.Discharges.Add(row.Discharge);
                                 }
-                                if(row.Discharge.Diagnoses != null)
+                                UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DC", SourceRecordId = row.Discharge.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                                if (row.Discharge.Diagnoses != null)
                                 {
                                     foreach(var dx in row.Discharge.Diagnoses)
                                     {
@@ -722,6 +741,7 @@ namespace PAM2FASAMS.Utilities
                                         {
                                             db.Diagnoses.Add(dx);
                                         }
+                                        UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = dx.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                                     }
                                 }
                                 if (row.Discharge.Evaluations != null)
@@ -737,6 +757,7 @@ namespace PAM2FASAMS.Utilities
                                         {
                                             db.Evaluations.Add(eval);
                                         }
+                                        UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = eval.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                                     }
                                 }
 
@@ -746,7 +767,7 @@ namespace PAM2FASAMS.Utilities
                 }
                 db.SaveChanges();
             }
-            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "TE", SourceRecordId = treatmentEpisode.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+            
         }
         public void UpsertServiceEvent(ServiceEvent serviceEvent)
         {
@@ -761,6 +782,7 @@ namespace PAM2FASAMS.Utilities
                 if (existing == null)
                 {
                     db.ServiceEvents.Add(serviceEvent);
+                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "SE", SourceRecordId = serviceEvent.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                     if (serviceEvent.ServiceEventCoveredServiceModifiers != null)
                     {
                         foreach(var row in serviceEvent.ServiceEventCoveredServiceModifiers)
@@ -786,10 +808,10 @@ namespace PAM2FASAMS.Utilities
                 else
                 {
                     db.Entry(existing).CurrentValues.SetValues(serviceEvent);
+                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "SE", SourceRecordId = serviceEvent.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
                 }
                 db.SaveChanges();
             }
-            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "SE", SourceRecordId = serviceEvent.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
         }
         public void UpsertSubContract(Subcontract subcontract)
         {

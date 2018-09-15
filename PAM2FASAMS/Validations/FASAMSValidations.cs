@@ -450,6 +450,7 @@ namespace PAM2FASAMS
             admission.ReferralSourceCode = previousAdmit.ReferralSourceCode;
             admission.PriorityPopulationCode = previousAdmit.PriorityPopulationCode;
             admission.TreatmentSourceId = treatmentEpisode.SourceRecordIdentifier;
+            admission.FederalTaxIdentifier = treatmentEpisode.FederalTaxIdentifier;
 
             return admission;
         }

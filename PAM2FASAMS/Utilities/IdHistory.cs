@@ -6,18 +6,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PAM2FASAMS.OutputFormats
+namespace PAM2FASAMS.Utilities
 {
-    public class JobLog
+    public class IdHistory
     {
-        [Key,Column(Order = 0)]
-        public int JobNumber { get; set; }
-        [Key,Column(Order = 1)]
+        [Key, Column(Order = 0)]
         public string RecordType { get; set; }
-        [Key,Column(Order = 2)]
-        public string SourceRecordId { get; set; }
-        
+        [Key, Column(Order = 1)]
+        public string OrigionalSourceRecordId { get; set; }
+        public string ONewSourceRecordId { get; set; }
         public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
     }
 }

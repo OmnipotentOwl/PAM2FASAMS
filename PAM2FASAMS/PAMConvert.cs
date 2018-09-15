@@ -2157,7 +2157,11 @@ namespace PAM2FASAMS
                         admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate, treatmentSetting);
                         var setting = pamRow.Where(r => r.Name == "Setting").Single().Value;
                         var contract = dt.OpportuniticlyLoadSubcontract(subcontNum, recordDate, fedTaxId);
-                        if(admission.TreatmentSettingCode != treatmentSetting)
+                        if(admission.TreatmentSettingCode == "0")
+                        {
+                            SetInitialTreatmentLevel(treatmentEpisode, admission, treatmentSetting);
+                        }
+                        if(admission.TreatmentSettingCode != treatmentSetting && admission.TreatmentSettingCode != "0")
                         {
                             TransferTreatmentLevel(treatmentEpisode,admission,contract,treatmentSetting,recordDate);
                             admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate, treatmentSetting);
@@ -2305,9 +2309,38 @@ namespace PAM2FASAMS
             var dt = new DataTools();
             Discharge transferDischarge = fValidations.CreateTransferDischarge(recordDate);
             Admission transferAdmission = fValidations.CreateTransferAdmission(recordDate, contract, episode, newLevel, admission);
+            // need new function to handle transfer as the admission may already be final discharged or transfered and we are inserting out of order records.
             fValidations.ProcessDischarge(admission, transferDischarge);
             fValidations.ProcessAdmission(episode, admission);
             fValidations.ProcessAdmission(episode, transferAdmission);
+            try
+            {
+                dt.UpsertTreatmentSession(episode);
+            }
+            catch (DbEntityValidationException ex)
+            {
+                // Retrieve the error messages as a list of strings.
+                var errorMessages = ex.EntityValidationErrors
+                        .SelectMany(x => x.ValidationErrors)
+                        .Select(x => x.ErrorMessage);
+
+                // Join the list to a single string.
+                var fullErrorMessage = string.Join(";", errorMessages);
+
+                // Combine the original exception message with the new one.
+                var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                // Throw a new DbEntityValidationException with the improved exception message.
+                throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+            }
+        }
+        private void SetInitialTreatmentLevel(TreatmentEpisode episode, Admission admission, string newLevel)
+        {
+            string existingLevel = admission.TreatmentSettingCode;
+            var fValidations = new FASAMSValidations();
+            var dt = new DataTools();
+            admission.TreatmentSettingCode = newLevel;
+            fValidations.ProcessAdmission(episode, admission);
             try
             {
                 dt.UpsertTreatmentSession(episode);

@@ -1,7 +1,9 @@
 ﻿using PAM2FASAMS.OutputFormats;
+using PAM2FASAMS.Utilities;
 using SQLite.CodeFirst;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.Entity;
 using System.Linq;
 using System.Text;
@@ -28,9 +30,16 @@ namespace PAM2FASAMS.DataContext
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
-            var sqliteConnectionInitializer = new SqliteDropCreateDatabaseWhenModelChanges<fasams_db>(modelBuilder);
-            Database.SetInitializer(sqliteConnectionInitializer);
+            string DbType = ConfigurationManager.AppSettings["DBType"];
+            if(DbType == "Local")
+            {
+                var sqliteConnectionInitializer = new SqliteDropCreateDatabaseWhenModelChanges<fasams_db>(modelBuilder);
+                Database.SetInitializer(sqliteConnectionInitializer);
+            }
+            if(DbType == "SQLServer")
+            {
 
+            }
         }
         public virtual DbSet<ProviderClient> ProviderClients { get; set; }
         public virtual DbSet<ProviderClientIdentifier> ProviderClientIdentifiers { get; set; }
@@ -55,6 +64,7 @@ namespace PAM2FASAMS.DataContext
         public virtual DbSet<SubcontractOutcomeMeasure> SubcontractOutcomeMeasures { get; set; }
 
         public virtual DbSet<JobLog> JobLogs { get; set; }
+        public virtual DbSet<IdHistory> IdHistorys { get; set; }
 
     }
 }
