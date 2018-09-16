@@ -9,6 +9,18 @@ using System.Threading.Tasks;
 
 namespace PAM2FASAMS
 {
+    public enum EvaluationToolTypes
+    {
+        CFAR,
+        FARS,
+        ASAM,
+        CGAS,
+        NCFAS_CAT,
+        LOCUS,
+        CALOCUS,
+        BIO,
+        TRIAL
+    }
     public class FASAMSValidations
     {
         #region Processing Functions
@@ -60,6 +72,7 @@ namespace PAM2FASAMS
                             }
                             else
                             {
+                                episode.Admissions.Add(admission);
                                 return;
                             }
                         episode.Admissions.Add(admission);
@@ -436,10 +449,11 @@ namespace PAM2FASAMS
 
             return discharge;
         }
-        public Admission CreateTransferAdmission(string recordDate, Subcontract contract, TreatmentEpisode treatmentEpisode, string treatmentSetting, Admission previousAdmit)
+        public Admission CreateTransferAdmission(string recordDate, Subcontract contract, TreatmentEpisode treatmentEpisode, string treatmentSetting, Admission previousAdmit, string siteId)
         {
             Admission admission = new Admission();
             admission.SourceRecordIdentifier = Guid.NewGuid().ToString();
+            admission.SiteIdentifier = siteId;
             admission.TypeCode = "2";
             admission.ContractNumber = contract.ContractNumber;
             admission.SubcontractNumber = contract.SubcontractNumber;
@@ -448,7 +462,6 @@ namespace PAM2FASAMS
             admission.ProgramAreaCode = previousAdmit.ProgramAreaCode;
             admission.IsCodependentCode = previousAdmit.IsCodependentCode;
             admission.ReferralSourceCode = previousAdmit.ReferralSourceCode;
-            admission.PriorityPopulationCode = previousAdmit.PriorityPopulationCode;
             admission.TreatmentSourceId = treatmentEpisode.SourceRecordIdentifier;
             admission.FederalTaxIdentifier = treatmentEpisode.FederalTaxIdentifier;
 
@@ -580,11 +593,11 @@ namespace PAM2FASAMS
                 default: return "";
             }
         }
-        public string ValidateEvalToolScore(FileType type, List<Field> fields)
+        public string ValidateEvalToolScore(EvaluationToolTypes type, List<Field> fields)
         {
             switch (type)
             {
-                case FileType.CFAR:
+                case EvaluationToolTypes.CFAR:
                     {
                         int saHist = int.Parse(fields.Where(r => r.Name == "SAHist").Single().Value.Trim());
                         int depress = int.Parse(fields.Where(r => r.Name == "Depress").Single().Value.Trim());
@@ -605,7 +618,7 @@ namespace PAM2FASAMS
                         int security = int.Parse(fields.Where(r => r.Name == "Security").Single().Value.Trim());
                         return (saHist+depress+anxiety+hyperAct+thought+cognitiv+medical+traumati+substanc+relation+behavior+aDLFunct+socLegal+workScho+dangSelf+dangOth+security).ToString();
                     }
-                case FileType.FARS:
+                case EvaluationToolTypes.FARS:
                     {
                         int saHist = int.Parse(fields.Where(r => r.Name == "SAHist").Single().Value.Trim());
                         int depress = int.Parse(fields.Where(r => r.Name == "Depress").Single().Value.Trim());
@@ -627,6 +640,8 @@ namespace PAM2FASAMS
                         int security = int.Parse(fields.Where(r => r.Name == "Security").Single().Value.Trim());
                         return (saHist + depress + anxiety + hyperAct + thought + cognitiv + medical + traumati + substanc + relation + famRela + famEnvi + aDLFunct + selfCare + workScho + dangSelf + dangOth + security).ToString();
                     }
+                case EvaluationToolTypes.CGAS:
+                    return (fields.Where(r => r.Name == "Cgas").Single().Value.Trim()).ToString();
                 default:
                     return null;
             }

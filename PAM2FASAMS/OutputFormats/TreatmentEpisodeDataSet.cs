@@ -103,7 +103,6 @@ namespace PAM2FASAMS.OutputFormats
         public string ReferralSourceCode { get; set; }
         public string DaysWaitingToEnterTreatmentKnownCode { get; set; }
         public int DaysWaitingToEnterTreatmentNumber { get; set; }
-        public string PriorityPopulationCode { get; set; }
         public List<PerformanceOutcomeMeasure> PerformanceOutcomeMeasures { get; set; }
         public List<Evaluation> Evaluations { get; set; }
         public List<Diagnosis> Diagnoses { get; set; }
@@ -541,10 +540,6 @@ namespace PAM2FASAMS.OutputFormats
 
         private string drugFreeAtDeliveryCodeField;
 
-        private string futureDrugUseIntendedCodeField;
-
-        private string friendsUseDrugsCodeField;
-
         private PerformanceOutcomeMeasure performanceOutcomeMeasuresField;
 
         private List<Evaluation> evaluationsField;
@@ -685,32 +680,6 @@ namespace PAM2FASAMS.OutputFormats
             set
             {
                 this.drugFreeAtDeliveryCodeField = value;
-            }
-        }
-
-        /// <remarks/>
-        public string FutureDrugUseIntendedCode
-        {
-            get
-            {
-                return this.futureDrugUseIntendedCodeField;
-            }
-            set
-            {
-                this.futureDrugUseIntendedCodeField = value;
-            }
-        }
-
-        /// <remarks/>
-        public string FriendsUseDrugsCode
-        {
-            get
-            {
-                return this.friendsUseDrugsCodeField;
-            }
-            set
-            {
-                this.friendsUseDrugsCodeField = value;
             }
         }
 

@@ -610,8 +610,6 @@ namespace PAM2FASAMS
                                     discharge.DischargeReasonCode = fValidations.ValidateDischargeReasonCode((pamRow.Where(r => r.Name == "DReason").Single().Value).Trim());
                                     discharge.BirthOutcomeCode = (pamRow.Where(r => r.Name == "DOutcome").Single().Value);
                                     discharge.DrugFreeAtDeliveryCode = (pamRow.Where(r => r.Name == "DrugFree").Single().Value);
-                                    discharge.FriendsUseDrugsCode = (pamRow.Where(r => r.Name == "FriendUse").Single().Value);
-                                    discharge.FutureDrugUseIntendedCode = (pamRow.Where(r => r.Name == "FutUse").Single().Value);
                                     PerformanceOutcomeMeasure performanceOutcomeMeasure = new PerformanceOutcomeMeasure
                                     {
                                         SourceRecordIdentifier = Guid.NewGuid().ToString(),
@@ -820,6 +818,8 @@ namespace PAM2FASAMS
             }
             var pamFile = ParseFile(inputFile, PAMMappingFile);
             int rowNum = 1;
+            string typeCode = "2"; //for use with CGAS Eval
+            string toolCode = "9"; //for use with CGAS Eval
             var pValidations = new PAMValidations();
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
@@ -1034,6 +1034,24 @@ namespace PAM2FASAMS
                                         };
                                         updatedDx.Add(dx);
                                     }
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.CGAS, pamRow);
+                                    if (evaluation == null || evaluation.ScoreCode != score)
+                                    {
+                                        Evaluation newEvaluation = new Evaluation
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = fValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = fValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            TypeCode = typeCode,
+                                            ToolCode = toolCode,
+                                            EvaluationDate = evalDate,
+                                            ScoreCode = score,
+                                            Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
+                                        };
+                                        admission.Evaluations.Add(newEvaluation);
+                                    }
+
                                     fValidations.ProcessDiagnosis(admission, updatedDx, evalDate);
                                     fValidations.ProcessAdmission(treatmentEpisode, admission);
                                     try
@@ -1208,6 +1226,23 @@ namespace PAM2FASAMS
                                             StartDate = fValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value))
                                         };
                                         updatedDx.Add(dx);
+                                    }
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.CGAS, pamRow);
+                                    if (evaluation == null || evaluation.ScoreCode != score)
+                                    {
+                                        Evaluation newEvaluation = new Evaluation
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = fValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = fValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            TypeCode = typeCode,
+                                            ToolCode = toolCode,
+                                            EvaluationDate = evalDate,
+                                            ScoreCode = score,
+                                            Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
+                                        };
+                                        admission.Evaluations.Add(newEvaluation);
                                     }
                                     fValidations.ProcessDiagnosis(admission, updatedDx, evalDate);
                                     fValidations.ProcessAdmission(treatmentEpisode, admission);
@@ -1391,6 +1426,24 @@ namespace PAM2FASAMS
                                         };
                                         updatedDx.Add(dx);
                                     }
+                                    Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.CGAS, pamRow);
+                                    if (evaluation == null || evaluation.ScoreCode != score)
+                                    {
+                                        Evaluation newEvaluation = new Evaluation
+                                        {
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = fValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            StaffIdentifier = fValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value)),
+                                            TypeCode = typeCode,
+                                            ToolCode = toolCode,
+                                            EvaluationDate = evalDate,
+                                            ScoreCode = score,
+                                            Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier
+                                        };
+                                        discharge.Evaluations.Add(newEvaluation);
+                                    }
+
                                     fValidations.ProcessPerformanceOutcomeMeasure(discharge, performanceOutcomeMeasure);
                                     fValidations.ProcessDiagnosis(admission, discharge, updatedDx, evalDate, dischargeType);
                                     fValidations.ProcessDischarge(admission, discharge);
@@ -1520,7 +1573,7 @@ namespace PAM2FASAMS
                                     TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
-                                    var score = fValidations.ValidateEvalToolScore(FileType.CFAR, pamRow);
+                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.CFAR, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
                                     {
                                         Evaluation newEvaluation = new Evaluation
@@ -1568,7 +1621,7 @@ namespace PAM2FASAMS
                                     TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
-                                    var score = fValidations.ValidateEvalToolScore(FileType.CFAR, pamRow);
+                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.CFAR, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
                                     {
                                         Evaluation newEvaluation = new Evaluation
@@ -1617,7 +1670,7 @@ namespace PAM2FASAMS
                                     Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Discharge discharge = dt.OpportuniticlyLoadDischarge(admission, evalDate);
                                     Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
-                                    var score = fValidations.ValidateEvalToolScore(FileType.CFAR, pamRow);
+                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.CFAR, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
                                     {
                                         Evaluation newEvaluation = new Evaluation
@@ -1726,7 +1779,7 @@ namespace PAM2FASAMS
                                     TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
-                                    var score = fValidations.ValidateEvalToolScore(FileType.FARS, pamRow);
+                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.FARS, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
                                     {
                                         Evaluation newEvaluation = new Evaluation
@@ -1774,7 +1827,7 @@ namespace PAM2FASAMS
                                     TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
-                                    var score = fValidations.ValidateEvalToolScore(FileType.FARS, pamRow);
+                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.FARS, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
                                     {
                                         Evaluation newEvaluation = new Evaluation
@@ -1823,7 +1876,7 @@ namespace PAM2FASAMS
                                     Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Discharge discharge = dt.OpportuniticlyLoadDischarge(admission, evalDate);
                                     Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
-                                    var score = fValidations.ValidateEvalToolScore(FileType.FARS, pamRow);
+                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.FARS, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
                                     {
                                         Evaluation newEvaluation = new Evaluation
@@ -1984,7 +2037,7 @@ namespace PAM2FASAMS
                                     TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
-                                    var score = fValidations.ValidateEvalToolScore(FileType.ASAM, pamRow);
+                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.ASAM, pamRow);
                                     if (evaluation == null || (evaluation.RecommendedLevelCode != recommendedLvl || evaluation.ActualLevelCode != actualLvl))
                                     {
                                         Evaluation newEvaluation = new Evaluation
@@ -2163,7 +2216,8 @@ namespace PAM2FASAMS
                         }
                         if(admission.TreatmentSettingCode != treatmentSetting && admission.TreatmentSettingCode != "0")
                         {
-                            TransferTreatmentLevel(treatmentEpisode,admission,contract,treatmentSetting,recordDate);
+                            string siteId = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
+                            TransferTreatmentLevel(treatmentEpisode,admission,contract,treatmentSetting,recordDate, siteId);
                             admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate, treatmentSetting);
                         }
 
@@ -2300,7 +2354,7 @@ namespace PAM2FASAMS
         }
         #endregion
         #region internal functions
-        private void TransferTreatmentLevel(TreatmentEpisode episode, Admission admission, Subcontract contract, string newLevel, string recordDate)
+        private void TransferTreatmentLevel(TreatmentEpisode episode, Admission admission, Subcontract contract, string newLevel, string recordDate, string siteId)
         {
             string existingLevel = admission.TreatmentSettingCode;
             Console.WriteLine("Automatic Transfer Invoked: {0} => {1}",existingLevel, newLevel);
@@ -2308,7 +2362,7 @@ namespace PAM2FASAMS
             var fValidations = new FASAMSValidations();
             var dt = new DataTools();
             Discharge transferDischarge = fValidations.CreateTransferDischarge(recordDate);
-            Admission transferAdmission = fValidations.CreateTransferAdmission(recordDate, contract, episode, newLevel, admission);
+            Admission transferAdmission = fValidations.CreateTransferAdmission(recordDate, contract, episode, newLevel, admission, siteId);
             // need new function to handle transfer as the admission may already be final discharged or transfered and we are inserting out of order records.
             fValidations.ProcessDischarge(admission, transferDischarge);
             fValidations.ProcessAdmission(episode, admission);

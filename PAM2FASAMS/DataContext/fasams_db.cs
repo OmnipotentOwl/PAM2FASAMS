@@ -33,7 +33,7 @@ namespace PAM2FASAMS.DataContext
             string DbType = ConfigurationManager.AppSettings["DBType"];
             if(DbType == "Local")
             {
-                var sqliteConnectionInitializer = new SqliteDropCreateDatabaseWhenModelChanges<fasams_db>(modelBuilder);
+                var sqliteConnectionInitializer = new SqliteDropCreateDatabaseWhenModelChanges<fasams_db>(modelBuilder);              
                 Database.SetInitializer(sqliteConnectionInitializer);
             }
             if(DbType == "SQLServer")

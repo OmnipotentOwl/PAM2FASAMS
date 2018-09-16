@@ -587,8 +587,8 @@ namespace PAM2FASAMS.Utilities
 
                 }
                 db.SaveChanges();
+                UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "CL", SourceRecordId = providerClient.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
             }
-            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "CL", SourceRecordId = providerClient.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
         }
         public void UpsertTreatmentSession(TreatmentEpisode treatmentEpisode)
         {
@@ -602,19 +602,19 @@ namespace PAM2FASAMS.Utilities
                 if(existing == null)
                 {
                     db.TreatmentEpisodes.Add(treatmentEpisode);
-                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "TE", SourceRecordId = treatmentEpisode.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "TE", SourceRecordId = treatmentEpisode.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                     if (treatmentEpisode.Admissions != null)
                     {
                         foreach (var row in treatmentEpisode.Admissions)
                         {
                             db.Admissions.Add(row);
-                            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "AD", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "AD", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                             if (row.PerformanceOutcomeMeasures != null)
                             {
                                 foreach (var perf in row.PerformanceOutcomeMeasures)
                                 {
                                     db.PerformanceOutcomeMeasures.Add(perf);
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "PM", SourceRecordId = perf.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "PM", SourceRecordId = perf.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                                     if (perf.SubstanceUseDisorders != null)
                                     {
                                         foreach (var sad in perf.SubstanceUseDisorders)
@@ -629,7 +629,7 @@ namespace PAM2FASAMS.Utilities
                                 foreach(var item in row.Evaluations)
                                 {
                                     db.Evaluations.Add(item);
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                                 }
                             }
                             if(row.Diagnoses != null)
@@ -637,13 +637,13 @@ namespace PAM2FASAMS.Utilities
                                 foreach (var item in row.Diagnoses)
                                 {
                                     db.Diagnoses.Add(item);
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                                 }
                             }
                             if(row.Discharge != null && row.Discharge.SourceRecordIdentifier != null)
                             {
                                 db.Discharges.Add(row.Discharge);
-                                UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DC", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                                UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DC", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                             }
                         }
                     }
@@ -651,7 +651,7 @@ namespace PAM2FASAMS.Utilities
                 else
                 {
                     db.Entry(existing).CurrentValues.SetValues(treatmentEpisode);
-                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "TE", SourceRecordId = treatmentEpisode.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "TE", SourceRecordId = treatmentEpisode.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                     if (treatmentEpisode.Admissions != null)
                     {
                         //db.Entry(existing.Admissions).CurrentValues.SetValues(treatmentEpisode.Admissions);
@@ -666,7 +666,7 @@ namespace PAM2FASAMS.Utilities
                             {
                                 db.Admissions.Add(row);
                             }
-                            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "AD", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "AD", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                             if (row.PerformanceOutcomeMeasures != null)
                             {
                                 foreach (var perf in row.PerformanceOutcomeMeasures)
@@ -680,7 +680,7 @@ namespace PAM2FASAMS.Utilities
                                     {
                                         db.PerformanceOutcomeMeasures.Add(perf);
                                     }
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "PM", SourceRecordId = perf.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "PM", SourceRecordId = perf.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                                 }
                             }
                             if (row.Evaluations != null)
@@ -696,7 +696,7 @@ namespace PAM2FASAMS.Utilities
                                     {
                                         db.Evaluations.Add(item);
                                     }
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                                 }
                             }
                             if (row.Diagnoses != null)
@@ -712,7 +712,7 @@ namespace PAM2FASAMS.Utilities
                                     {
                                         db.Diagnoses.Add(item);
                                     }
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                                 }
                             }
                             if (row.Discharge != null)
@@ -727,7 +727,7 @@ namespace PAM2FASAMS.Utilities
                                 {
                                     db.Discharges.Add(row.Discharge);
                                 }
-                                UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DC", SourceRecordId = row.Discharge.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                                UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DC", SourceRecordId = row.Discharge.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                                 if (row.Discharge.Diagnoses != null)
                                 {
                                     foreach(var dx in row.Discharge.Diagnoses)
@@ -741,7 +741,7 @@ namespace PAM2FASAMS.Utilities
                                         {
                                             db.Diagnoses.Add(dx);
                                         }
-                                        UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = dx.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                                        UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = dx.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                                     }
                                 }
                                 if (row.Discharge.Evaluations != null)
@@ -757,7 +757,7 @@ namespace PAM2FASAMS.Utilities
                                         {
                                             db.Evaluations.Add(eval);
                                         }
-                                        UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = eval.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                                        UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = eval.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                                     }
                                 }
 
@@ -782,7 +782,7 @@ namespace PAM2FASAMS.Utilities
                 if (existing == null)
                 {
                     db.ServiceEvents.Add(serviceEvent);
-                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "SE", SourceRecordId = serviceEvent.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "SE", SourceRecordId = serviceEvent.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                     if (serviceEvent.ServiceEventCoveredServiceModifiers != null)
                     {
                         foreach(var row in serviceEvent.ServiceEventCoveredServiceModifiers)
@@ -808,7 +808,7 @@ namespace PAM2FASAMS.Utilities
                 else
                 {
                     db.Entry(existing).CurrentValues.SetValues(serviceEvent);
-                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "SE", SourceRecordId = serviceEvent.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "SE", SourceRecordId = serviceEvent.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                 }
                 db.SaveChanges();
             }
@@ -929,6 +929,22 @@ namespace PAM2FASAMS.Utilities
                 }
                 db.SaveChanges();
             }
+        }
+        public void UpsertJobLog(JobLog job, fasams_db db)
+        {
+            
+            JobLog existing = db.JobLogs
+                .SingleOrDefault(j => j.JobNumber == job.JobNumber && j.RecordType == job.RecordType && j.SourceRecordId == job.SourceRecordId);
+
+            if (existing == null)
+            {
+                db.JobLogs.Add(job);
+            }
+            else
+            {
+                db.Entry(existing).CurrentValues.SetValues(job);
+            }
+            //db.SaveChanges();
         }
     }
 }

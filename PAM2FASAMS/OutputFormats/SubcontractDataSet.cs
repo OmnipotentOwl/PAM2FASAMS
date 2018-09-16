@@ -122,7 +122,8 @@ namespace PAM2FASAMS.OutputFormats
         [DefaultValue(0)]
         public decimal PaymentRatePerUnitAmount { get; set; }
         public string PaymentMethodCode { get; set; }
-        public string BundledRateCode { get; set; }
+        public string ProjectCode { get; set; }
+        public string UnitOfMeasureCode { get; set; }
         [System.Xml.Serialization.XmlAttributeAttribute()]
         public string action { get; set; }
 
