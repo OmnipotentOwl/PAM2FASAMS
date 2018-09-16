@@ -9,6 +9,12 @@ using System.Threading.Tasks;
 
 namespace PAM2FASAMS
 {
+    public enum DataSetTypes
+    {
+        Client,
+        TreatmentEpisode,
+        ServiceEvent
+    }
     public enum EvaluationToolTypes
     {
         CFAR,

@@ -78,6 +78,13 @@ namespace PAM2FASAMS
                         break;
                 }
             }
+            InvokeChronologicalReorganizationValidation();
+            clientDataSet.clients.Clear();
+            treatmentEpisodeDataSet.TreatmentEpisodes.Clear();
+            serviceEventsDataSet.serviceEvents.Clear();
+            CreateOutputDataSet(clientDataSet, DataSetTypes.Client);
+            CreateOutputDataSet(treatmentEpisodeDataSet, DataSetTypes.TreatmentEpisode);
+            CreateOutputDataSet(serviceEventsDataSet, DataSetTypes.ServiceEvent);
             WriteXml(clientDataSet, null, "ClientDataSet", options.Directory);
             WriteXml(treatmentEpisodeDataSet, null, "TreatmentEpisodeDataSet", options.Directory);
             WriteXml(serviceEventsDataSet, null, "ServiceEventDataSet", options.Directory);
@@ -1049,7 +1056,10 @@ namespace PAM2FASAMS
                                             ScoreCode = score,
                                             Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
                                         };
-                                        admission.Evaluations.Add(newEvaluation);
+                                        if (!string.IsNullOrWhiteSpace(newEvaluation.ScoreCode))
+                                        {
+                                            admission.Evaluations.Add(newEvaluation);
+                                        }
                                     }
 
                                     fValidations.ProcessDiagnosis(admission, updatedDx, evalDate);
@@ -1242,7 +1252,10 @@ namespace PAM2FASAMS
                                             ScoreCode = score,
                                             Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
                                         };
-                                        admission.Evaluations.Add(newEvaluation);
+                                        if (!string.IsNullOrWhiteSpace(newEvaluation.ScoreCode))
+                                        {
+                                            admission.Evaluations.Add(newEvaluation);
+                                        }
                                     }
                                     fValidations.ProcessDiagnosis(admission, updatedDx, evalDate);
                                     fValidations.ProcessAdmission(treatmentEpisode, admission);
@@ -1441,7 +1454,10 @@ namespace PAM2FASAMS
                                             ScoreCode = score,
                                             Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier
                                         };
-                                        discharge.Evaluations.Add(newEvaluation);
+                                        if (!string.IsNullOrWhiteSpace(newEvaluation.ScoreCode))
+                                        {
+                                            discharge.Evaluations.Add(newEvaluation);
+                                        }
                                     }
 
                                     fValidations.ProcessPerformanceOutcomeMeasure(discharge, performanceOutcomeMeasure);
@@ -2352,6 +2368,7 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed Conversion of PAM EVNT file.");
         }
+        
         #endregion
         #region internal functions
         private void TransferTreatmentLevel(TreatmentEpisode episode, Admission admission, Subcontract contract, string newLevel, string recordDate, string siteId)
@@ -2414,6 +2431,308 @@ namespace PAM2FASAMS
 
                 // Throw a new DbEntityValidationException with the improved exception message.
                 throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+            }
+        }
+        private void InvokeChronologicalReorganizationValidation()
+        {
+            Console.WriteLine("Starting Chronological Reorganization Validation Process");
+            var dt = new DataTools();
+            List<JobLog> pendingJobs = new List<JobLog>();
+            pendingJobs = dt.LoadPendingJobs();
+
+            foreach(var job in pendingJobs.Where(j => j.RecordType == "PM").OrderBy(j=> j.CreatedAt))
+            {
+                try
+                {
+                    PerformanceOutcomeMeasure perf = dt.OpportuniticlyLoadPerformanceOutcomeMeasure(job.SourceRecordId);
+                    Admission currentAdmission;
+                    Admission checkedAdmission;
+                    TreatmentEpisode treatmentEpisode;
+                    if (perf.Admission_SourceRecordIdentifier != null)
+                    {
+                        currentAdmission = dt.OpportuniticlyLoadAdmission(perf.Admission_SourceRecordIdentifier);
+                    }
+                    else
+                    {
+                        Discharge discharge = dt.OpportuniticlyLoadDischarge(perf);
+                        currentAdmission = dt.OpportuniticlyLoadAdmission(discharge);
+                    }
+                    treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(currentAdmission.TreatmentSourceId);
+                    checkedAdmission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, perf.PerformanceOutcomeMeasureDate);
+                    if (currentAdmission.SourceRecordIdentifier != checkedAdmission.SourceRecordIdentifier)
+                    {
+                        perf.Admission_SourceRecordIdentifier = checkedAdmission.SourceRecordIdentifier;
+                        Console.WriteLine("Updating Perf Id:{0} from Admision Id:{1} to Id:{2}",perf.SourceRecordIdentifier, currentAdmission.SourceRecordIdentifier,checkedAdmission.SourceRecordIdentifier);
+                        try
+                        {
+                            dt.UpsertPerformanceOutcomeMeasure(perf);
+                        }
+                        catch (DbEntityValidationException ex)
+                        {
+                            // Retrieve the error messages as a list of strings.
+                            var errorMessages = ex.EntityValidationErrors
+                                    .SelectMany(x => x.ValidationErrors)
+                                    .Select(x => x.ErrorMessage);
+
+                            // Join the list to a single string.
+                            var fullErrorMessage = string.Join(";", errorMessages);
+
+                            // Combine the original exception message with the new one.
+                            var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                            // Throw a new DbEntityValidationException with the improved exception message.
+                            throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //WriteErrorLog(ex, "ServiceEventDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum); //Handle Later
+                }
+            }
+            foreach (var job in pendingJobs.Where(j => j.RecordType == "EV").OrderBy(j => j.CreatedAt))
+            {
+                try
+                {
+                    Evaluation evaluation = dt.OpportuniticlyLoadEvaluation(job.SourceRecordId);
+                    Admission currentAdmission;
+                    Admission checkedAdmission;
+                    TreatmentEpisode treatmentEpisode;
+                    if (evaluation.Admission_SourceRecordIdentifier != null)
+                    {
+                        currentAdmission = dt.OpportuniticlyLoadAdmission(evaluation.Admission_SourceRecordIdentifier);
+                    }
+                    else
+                    {
+                        Discharge discharge = dt.OpportuniticlyLoadDischarge(evaluation.Discharge_SourceRecordIdentifier);
+                        currentAdmission = dt.OpportuniticlyLoadAdmission(discharge);
+                    }
+                    treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(currentAdmission.TreatmentSourceId);
+                    checkedAdmission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, evaluation.EvaluationDate);
+                    if (currentAdmission.SourceRecordIdentifier != checkedAdmission.SourceRecordIdentifier)
+                    {
+                        evaluation.Admission_SourceRecordIdentifier = checkedAdmission.SourceRecordIdentifier;
+                        Console.WriteLine("Updating Eval Id:{0} from Admision Id:{1} to Id:{2}", evaluation.SourceRecordIdentifier, currentAdmission.SourceRecordIdentifier, checkedAdmission.SourceRecordIdentifier);
+                        try
+                        {
+                            dt.UpsertEvaluation(evaluation);
+                        }
+                        catch (DbEntityValidationException ex)
+                        {
+                            // Retrieve the error messages as a list of strings.
+                            var errorMessages = ex.EntityValidationErrors
+                                    .SelectMany(x => x.ValidationErrors)
+                                    .Select(x => x.ErrorMessage);
+
+                            // Join the list to a single string.
+                            var fullErrorMessage = string.Join(";", errorMessages);
+
+                            // Combine the original exception message with the new one.
+                            var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                            // Throw a new DbEntityValidationException with the improved exception message.
+                            throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //WriteErrorLog(ex, "ServiceEventDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum); //Handle Later
+                }
+            }
+            foreach (var job in pendingJobs.Where(j => j.RecordType == "DX").OrderBy(j => j.CreatedAt))
+            {
+                try
+                {
+                    Diagnosis diagnosis = dt.OpportuniticlyLoadDiagnosis(job.SourceRecordId);
+                    Admission currentAdmission;
+                    Admission checkedAdmission;
+                    TreatmentEpisode treatmentEpisode;
+                    if (diagnosis.Admission_SourceRecordIdentifier != null)
+                    {
+                        currentAdmission = dt.OpportuniticlyLoadAdmission(diagnosis.Admission_SourceRecordIdentifier);
+                    }
+                    else
+                    {
+                        Discharge discharge = dt.OpportuniticlyLoadDischarge(diagnosis.Discharge_SourceRecordIdentifier);
+                        currentAdmission = dt.OpportuniticlyLoadAdmission(discharge);
+                    }
+                    treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(currentAdmission.TreatmentSourceId);
+                    //checkedAdmission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, diagnosis.EvaluationDate);
+                    //if (currentAdmission.SourceRecordIdentifier != checkedAdmission.SourceRecordIdentifier)
+                    //{
+                    //    diagnosis.Admission_SourceRecordIdentifier = checkedAdmission.SourceRecordIdentifier;
+                    //    Console.WriteLine("Updating Diagnosis Id:{0} from Admision Id:{1} to Id:{2}", diagnosis.SourceRecordIdentifier, currentAdmission.SourceRecordIdentifier, checkedAdmission.SourceRecordIdentifier);
+                    //    try
+                    //    {
+                    //        dt.UpsertDiagnosis(diagnosis);
+                    //    }
+                    //    catch (DbEntityValidationException ex)
+                    //    {
+                    //        // Retrieve the error messages as a list of strings.
+                    //        var errorMessages = ex.EntityValidationErrors
+                    //                .SelectMany(x => x.ValidationErrors)
+                    //                .Select(x => x.ErrorMessage);
+
+                    //        // Join the list to a single string.
+                    //        var fullErrorMessage = string.Join(";", errorMessages);
+
+                    //        // Combine the original exception message with the new one.
+                    //        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                    //        // Throw a new DbEntityValidationException with the improved exception message.
+                    //        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                    //    }
+                    //}
+                }
+                catch (Exception ex)
+                {
+                    //WriteErrorLog(ex, "ServiceEventDataSet", Path.GetDirectoryName(inputFile), inputFile, rowNum); //Handle Later
+                }
+            }
+            foreach (var job in pendingJobs.Where(j => j.RecordType == "AD").OrderBy(j => j.CreatedAt))
+            {
+
+            }
+            foreach (var job in pendingJobs.Where(j => j.RecordType == "DC").OrderBy(j => j.CreatedAt))
+            {
+
+            }
+
+            Console.WriteLine("Completed Chronological Reorganization Validation Process");
+        }
+        private void CreateOutputDataSet(object dataStructure, DataSetTypes dataSet)
+        {
+            var dt = new DataTools();
+            List<JobLog> pendingJobs = new List<JobLog>();
+            pendingJobs = dt.LoadPendingJobs();
+            switch (dataSet)
+            {
+                case DataSetTypes.Client:
+                    {
+                        ProviderClients clientDataSet = (ProviderClients)dataStructure;
+                        foreach (var job in pendingJobs.Where(j => j.RecordType == "CL").OrderBy(j => j.CreatedAt))
+                        {
+                            ProviderClient client = dt.OpportuniticlyLoadProviderClient(job.SourceRecordId);
+                            switch (job.Status)
+                            {
+                                case "Update":
+                                    {
+                                        clientDataSet.clients.Add(client);
+                                    }
+                                    break;
+                                case "Delete":
+                                    {
+
+                                    }
+                                    break;
+                                case "UnDelete":
+                                    {
+
+                                    }
+                                    break;
+                                default:
+                                    {
+                                        clientDataSet.clients.Add(client);
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                    break;
+                case DataSetTypes.TreatmentEpisode:
+                    {
+                        TreatmentEpisodeDataSet episodeDataSet = (TreatmentEpisodeDataSet)dataStructure;
+                        foreach (var job in pendingJobs.Where(j => j.RecordType == "TE").OrderBy(j => j.CreatedAt))
+                        {
+                            TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(job.SourceRecordId);
+                            switch (job.Status)
+                            {
+                                case "Update":
+                                    {
+                                        episodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                    }
+                                    break;
+                                case "Delete":
+                                    {
+
+                                    }
+                                    break;
+                                case "UnDelete":
+                                    {
+
+                                    }
+                                    break;
+                                default:
+                                    {
+                                        episodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                                    }
+                                    break;
+                            }
+                        }
+                        //foreach (var job in pendingJobs.Where(j => j.RecordType == "AD").OrderBy(j => j.CreatedAt))
+                        //{
+                        //    Admission admission = dt.OpportuniticlyLoadAdmission(job.SourceRecordId);
+                        //    switch (job.Status)
+                        //    {
+                        //        case "Update":
+                        //            {
+                        //                episodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                        //            }
+                        //            break;
+                        //        case "Delete":
+                        //            {
+
+                        //            }
+                        //            break;
+                        //        case "UnDelete":
+                        //            {
+
+                        //            }
+                        //            break;
+                        //        default:
+                        //            {
+                        //                episodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                        //            }
+                        //            break;
+                        //    }
+                        //}
+
+                    }
+                    break;
+                case DataSetTypes.ServiceEvent:
+                    {
+                        ServiceEvents serviceEventsDataSet = (ServiceEvents)dataStructure;
+                        foreach (var job in pendingJobs.Where(j => j.RecordType == "SE").OrderBy(j => j.CreatedAt))
+                        {
+                            ServiceEvent serviceEvent = dt.OpportuniticlyLoadServiceEvent(job.SourceRecordId);
+                            switch (job.Status)
+                            {
+                                case "Update":
+                                    {
+                                        serviceEventsDataSet.serviceEvents.Add(serviceEvent);
+                                    }
+                                    break;
+                                case "Delete":
+                                    {
+
+                                    }
+                                    break;
+                                case "UnDelete":
+                                    {
+
+                                    }
+                                    break;
+                                default:
+                                    {
+                                        serviceEventsDataSet.serviceEvents.Add(serviceEvent);
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                    break;
+                default: return;
             }
         }
         private static string PAMMappingFile;

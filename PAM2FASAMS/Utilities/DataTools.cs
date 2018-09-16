@@ -151,6 +151,23 @@ namespace PAM2FASAMS.Utilities
                 }
             }
         }
+        public TreatmentEpisode OpportuniticlyLoadTreatmentSession(string sourceRecordIdentifier)
+        {
+            using (var db = new fasams_db())
+            {
+                List<TreatmentEpisode> existing = db.TreatmentEpisodes
+                    .Include(x => x.Admissions.Select(a => a.Discharge))
+                    .Include(x => x.ImmediateDischarges)
+                    .Where(t => t.SourceRecordIdentifier == sourceRecordIdentifier)
+                    .ToList();
+
+                if(existing.Any(t => t.SourceRecordIdentifier == sourceRecordIdentifier))
+                {
+                    return existing.Where(t => t.SourceRecordIdentifier == sourceRecordIdentifier).FirstOrDefault();
+                }
+                return null;
+            }
+        }
         public ImmediateDischarge OpportuniticlyLoadImmediateDischarge(TreatmentEpisode episode, UpdateType type, string recordDate)
         {
             DateTime date = DateTime.Parse(recordDate);
@@ -188,6 +205,21 @@ namespace PAM2FASAMS.Utilities
                     return existing.Where(i => i.InternalEvaluationDate == date).FirstOrDefault();
                 }
                 return new ImmediateDischarge { SourceRecordIdentifier = Guid.NewGuid().ToString(), TreatmentSourceId = episode.SourceRecordIdentifier };
+            }
+        }
+        public ImmediateDischarge OpportuniticlyLoadImmediateDischarge(string sourceRecordIdentifier)
+        {
+            using (var db = new fasams_db())
+            {
+                List<ImmediateDischarge> existing = db.ImmediateDischarges
+                    .Where(i => i.SourceRecordIdentifier == sourceRecordIdentifier)
+                    .ToList();
+                
+                if (existing.Any(i => i.SourceRecordIdentifier == sourceRecordIdentifier))
+                {
+                    return existing.Where(i => i.SourceRecordIdentifier == sourceRecordIdentifier).FirstOrDefault();
+                }
+                return null;
             }
         }
         public Admission OpportuniticlyLoadAdmission(TreatmentEpisode episode, UpdateType type, string recordDate)
@@ -285,6 +317,46 @@ namespace PAM2FASAMS.Utilities
                 return new Admission { SourceRecordIdentifier = Guid.NewGuid().ToString(), Evaluations = new List<Evaluation>(), Diagnoses = new List<Diagnosis>() };
             }
         }
+        public Admission OpportuniticlyLoadAdmission(string sourceRecordIdentifier)
+        {
+            using (var db = new fasams_db())
+            {
+                List<Admission> existing = db.Admissions
+                    .Include(x => x.PerformanceOutcomeMeasures.Select(p => p.SubstanceUseDisorders))
+                    .Include(x => x.Evaluations)
+                    .Include(x => x.Diagnoses)
+                    .Include(x => x.Discharge)
+                    .Where(a => a.SourceRecordIdentifier == sourceRecordIdentifier)
+                    .ToList();
+
+                bool predicate2(Admission a) => a.SourceRecordIdentifier == sourceRecordIdentifier;
+                if (existing.Any(predicate2))
+                {
+                    return existing.Where(predicate2).FirstOrDefault();
+                }
+                return null;
+            }
+        }
+        public Admission OpportuniticlyLoadAdmission(Discharge discharge)
+        {
+            using (var db = new fasams_db())
+            {
+                List<Admission> existing = db.Admissions
+                    .Include(x => x.PerformanceOutcomeMeasures.Select(p => p.SubstanceUseDisorders))
+                    .Include(x => x.Evaluations)
+                    .Include(x => x.Diagnoses)
+                    .Include(x => x.Discharge)
+                    .Where(a => a.Discharge_SourceRecordIdentifier == discharge.SourceRecordIdentifier)
+                    .ToList();
+
+                bool predicate2(Admission a) => a.Discharge_SourceRecordIdentifier == discharge.SourceRecordIdentifier;
+                if (existing.Any(predicate2))
+                {
+                    return existing.Where(predicate2).FirstOrDefault();
+                }
+                return null;
+            }
+        }
         public Discharge OpportuniticlyLoadDischarge(Admission admission, string recordDate)
         {
             DateTime date = DateTime.Parse(recordDate);
@@ -306,6 +378,42 @@ namespace PAM2FASAMS.Utilities
                     return existing.Where(i => i.SourceRecordIdentifier == admission.Discharge_SourceRecordIdentifier).FirstOrDefault();
                 }
 
+                return null;
+            }
+        }
+        public Discharge OpportuniticlyLoadDischarge(string sourceRecordIdentifier)
+        {
+            using (var db = new fasams_db())
+            {
+                List<Discharge> existing = db.Discharges
+                    .Include(x => x.PerformanceOutcomeMeasures)
+                    .Include(x => x.Evaluations)
+                    .Include(x => x.Diagnoses)
+                    .Where(d => d.SourceRecordIdentifier == sourceRecordIdentifier)
+                    .ToList();
+
+                if (existing.Any(i => i.SourceRecordIdentifier == sourceRecordIdentifier))
+                {
+                    return existing.Where(i => i.SourceRecordIdentifier == sourceRecordIdentifier).SingleOrDefault();
+                }
+                return null;
+            }
+        }
+        public Discharge OpportuniticlyLoadDischarge(PerformanceOutcomeMeasure performanceOutcome)
+        {
+            using (var db = new fasams_db())
+            {
+                List<Discharge> existing = db.Discharges
+                    .Include(x => x.PerformanceOutcomeMeasures)
+                    .Include(x => x.Evaluations)
+                    .Include(x => x.Diagnoses)
+                    .Where(d => d.PerformanceOutcomeMeasures.SourceRecordIdentifier == performanceOutcome.SourceRecordIdentifier)
+                    .ToList();
+
+                if (existing.Any(i => i.PerformanceOutcomeMeasures?.SourceRecordIdentifier == performanceOutcome.SourceRecordIdentifier))
+                {
+                    return existing.Where(i => i.PerformanceOutcomeMeasures?.SourceRecordIdentifier == performanceOutcome.SourceRecordIdentifier).SingleOrDefault();
+                }
                 return null;
             }
         }
@@ -351,7 +459,6 @@ namespace PAM2FASAMS.Utilities
         }
         public ProviderClient OpportuniticlyLoadProviderClient(string SourceRecordIdentifier, string FederalTaxIdentifier)
         {
-
             using (var db = new fasams_db())
             {
                 ProviderClient existing = db.ProviderClients
@@ -371,7 +478,28 @@ namespace PAM2FASAMS.Utilities
 
                 return existing;
             }
-            
+        }
+        public ProviderClient OpportuniticlyLoadProviderClient(string SourceRecordIdentifier)
+        {
+            using (var db = new fasams_db())
+            {
+                ProviderClient existing = db.ProviderClients
+                    .Include(x => x.ProviderClientIdentifiers)
+                    .Include(x => x.ProviderClientPhones)
+                    .Include(x => x.ProviderClientEmailAddresses)
+                    .Include(x => x.ProviderClientPhysicalAddresses)
+                    .SingleOrDefault(c => c.SourceRecordIdentifier == SourceRecordIdentifier);
+
+                if (existing == null)
+                {
+                    existing = new ProviderClient
+                    {
+                        ProviderClientIdentifiers = new List<ProviderClientIdentifier>()
+                    };
+                }
+
+                return existing;
+            }
         }
         public Subcontract OpportuniticlyLoadSubcontract(string contractNum, string subcontractNum, string recordDate, string FederalTaxIdentifier)
         {
@@ -526,6 +654,66 @@ namespace PAM2FASAMS.Utilities
             }
             
         }
+        public ServiceEvent OpportuniticlyLoadServiceEvent(string sourceRecordIdentifier)
+        {
+            using (var db = new fasams_db())
+            {
+                List<ServiceEvent> existing = db.ServiceEvents
+                    .Include(x => x.ServiceEventCoveredServiceModifiers)
+                    .Include(x => x.ServiceEventHcpcsProcedureModifiers)
+                    .Include(x => x.ServiceEventExpenditureModifiers)
+                    .Where(s => s.SourceRecordIdentifier == sourceRecordIdentifier)
+                    .ToList();
+                if (existing.Any(s => s.SourceRecordIdentifier == sourceRecordIdentifier))
+                {
+                    return existing.Where(s => s.SourceRecordIdentifier == sourceRecordIdentifier).FirstOrDefault();
+                }
+                return null;
+            }
+        }
+        public PerformanceOutcomeMeasure OpportuniticlyLoadPerformanceOutcomeMeasure(string sourceRecordIdentifier)
+        {
+            using (var db = new fasams_db())
+            {
+                List<PerformanceOutcomeMeasure> existing = db.PerformanceOutcomeMeasures
+                    .Include(x => x.SubstanceUseDisorders)
+                    .Where(p => p.SourceRecordIdentifier == sourceRecordIdentifier)
+                    .ToList();
+                if (existing.Any(s => s.SourceRecordIdentifier == sourceRecordIdentifier))
+                {
+                    return existing.Where(s => s.SourceRecordIdentifier == sourceRecordIdentifier).FirstOrDefault();
+                }
+                return null;
+            }
+        }
+        public Evaluation OpportuniticlyLoadEvaluation(string sourceRecordIdentifier)
+        {
+            using (var db = new fasams_db())
+            {
+                List<Evaluation> existing = db.Evaluations
+                    .Where(p => p.SourceRecordIdentifier == sourceRecordIdentifier)
+                    .ToList();
+                if (existing.Any(s => s.SourceRecordIdentifier == sourceRecordIdentifier))
+                {
+                    return existing.Where(s => s.SourceRecordIdentifier == sourceRecordIdentifier).FirstOrDefault();
+                }
+                return null;
+            }
+        }
+        public Diagnosis OpportuniticlyLoadDiagnosis(string sourceRecordIdentifier)
+        {
+            using (var db = new fasams_db())
+            {
+                List<Diagnosis> existing = db.Diagnoses
+                    .Where(p => p.SourceRecordIdentifier == sourceRecordIdentifier)
+                    .ToList();
+                if (existing.Any(s => s.SourceRecordIdentifier == sourceRecordIdentifier))
+                {
+                    return existing.Where(s => s.SourceRecordIdentifier == sourceRecordIdentifier).FirstOrDefault();
+                }
+                return null;
+            }
+        }
         public List<JobLog> LoadPendingJobs()
         {
             using (var db = new fasams_db())
@@ -586,8 +774,8 @@ namespace PAM2FASAMS.Utilities
                     db.Entry(existing).CurrentValues.SetValues(providerClient);
 
                 }
-                db.SaveChanges();
                 UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "CL", SourceRecordId = providerClient.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                db.SaveChanges();
             }
         }
         public void UpsertTreatmentSession(TreatmentEpisode treatmentEpisode)
@@ -607,14 +795,12 @@ namespace PAM2FASAMS.Utilities
                     {
                         foreach (var row in treatmentEpisode.Admissions)
                         {
-                            db.Admissions.Add(row);
-                            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "AD", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                            UpsertAdmission(row, db);
                             if (row.PerformanceOutcomeMeasures != null)
                             {
                                 foreach (var perf in row.PerformanceOutcomeMeasures)
                                 {
-                                    db.PerformanceOutcomeMeasures.Add(perf);
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "PM", SourceRecordId = perf.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                                    UpsertPerformanceOutcomeMeasure(perf, db);
                                     if (perf.SubstanceUseDisorders != null)
                                     {
                                         foreach (var sad in perf.SubstanceUseDisorders)
@@ -628,22 +814,19 @@ namespace PAM2FASAMS.Utilities
                             {
                                 foreach(var item in row.Evaluations)
                                 {
-                                    db.Evaluations.Add(item);
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                                    UpsertEvaluation(item, db);
                                 }
                             }
                             if(row.Diagnoses != null)
                             {
                                 foreach (var item in row.Diagnoses)
                                 {
-                                    db.Diagnoses.Add(item);
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                                    UpsertDiagnosis(item, db);
                                 }
                             }
                             if(row.Discharge != null && row.Discharge.SourceRecordIdentifier != null)
                             {
-                                db.Discharges.Add(row.Discharge);
-                                UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DC", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                                UpsertDischarge(row.Discharge, db);
                             }
                         }
                     }
@@ -654,120 +837,280 @@ namespace PAM2FASAMS.Utilities
                     UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "TE", SourceRecordId = treatmentEpisode.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                     if (treatmentEpisode.Admissions != null)
                     {
-                        //db.Entry(existing.Admissions).CurrentValues.SetValues(treatmentEpisode.Admissions);
                         foreach (var row in treatmentEpisode.Admissions)
                         {
-                            var exAdmit = db.Admissions.Find(row.SourceRecordIdentifier);
-                            if (exAdmit != null)
-                            {
-                                db.Entry(exAdmit).CurrentValues.SetValues(row);
-                            }
-                            else
-                            {
-                                db.Admissions.Add(row);
-                            }
-                            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "AD", SourceRecordId = row.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                            UpsertAdmission(row, db);
                             if (row.PerformanceOutcomeMeasures != null)
                             {
                                 foreach (var perf in row.PerformanceOutcomeMeasures)
                                 {
-                                    var exPerf = db.PerformanceOutcomeMeasures.Find(perf.SourceRecordIdentifier);
-                                    if (exPerf != null)
+                                    UpsertPerformanceOutcomeMeasure(perf, db);
+                                    if (perf.SubstanceUseDisorders != null)
                                     {
-                                        db.Entry(exPerf).CurrentValues.SetValues(perf);
+                                        foreach (var sad in perf.SubstanceUseDisorders)
+                                        {
+                                            throw new MissingMethodException();
+                                        }
                                     }
-                                    else
-                                    {
-                                        db.PerformanceOutcomeMeasures.Add(perf);
-                                    }
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "PM", SourceRecordId = perf.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
                                 }
                             }
                             if (row.Evaluations != null)
                             {
                                 foreach (var item in row.Evaluations)
                                 {
-                                    var exItem = db.Evaluations.Find(item.SourceRecordIdentifier);
-                                    if (exItem != null)
-                                    {
-                                        db.Entry(exItem).CurrentValues.SetValues(item);
-                                    }
-                                    else
-                                    {
-                                        db.Evaluations.Add(item);
-                                    }
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                                    UpsertEvaluation(item, db);
                                 }
                             }
                             if (row.Diagnoses != null)
                             {
                                 foreach (var item in row.Diagnoses)
                                 {
-                                    var exItem = db.Diagnoses.Find(item.SourceRecordIdentifier);
-                                    if (exItem != null)
-                                    {
-                                        db.Entry(exItem).CurrentValues.SetValues(item);
-                                    }
-                                    else
-                                    {
-                                        db.Diagnoses.Add(item);
-                                    }
-                                    UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = item.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                                    UpsertDiagnosis(item, db);
                                 }
                             }
                             if (row.Discharge != null)
                             {
-
-                                var exItem = db.Discharges.Find(row.Discharge.SourceRecordIdentifier);
-                                if (exItem != null)
-                                {
-                                    db.Entry(exItem).CurrentValues.SetValues(row.Discharge);
-                                }
-                                else
-                                {
-                                    db.Discharges.Add(row.Discharge);
-                                }
-                                UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DC", SourceRecordId = row.Discharge.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                                UpsertDischarge(row.Discharge, db);
                                 if (row.Discharge.Diagnoses != null)
                                 {
                                     foreach(var dx in row.Discharge.Diagnoses)
                                     {
-                                        var exDx = db.Diagnoses.Find(dx.SourceRecordIdentifier);
-                                        if (exDx != null)
-                                        {
-                                            db.Entry(exDx).CurrentValues.SetValues(dx);
-                                        }
-                                        else
-                                        {
-                                            db.Diagnoses.Add(dx);
-                                        }
-                                        UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = dx.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                                        UpsertDiagnosis(dx, db);
                                     }
                                 }
                                 if (row.Discharge.Evaluations != null)
                                 {
                                     foreach (var eval in row.Discharge.Evaluations)
                                     {
-                                        var exEval = db.Evaluations.Find(eval.SourceRecordIdentifier);
-                                        if (exEval != null)
-                                        {
-                                            db.Entry(exEval).CurrentValues.SetValues(eval);
-                                        }
-                                        else
-                                        {
-                                            db.Evaluations.Add(eval);
-                                        }
-                                        UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = eval.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+                                        UpsertEvaluation(eval, db);
                                     }
                                 }
-
                             }
                         }
                     }
                 }
                 db.SaveChanges();
+            }           
+        }
+        public void UpsertAdmission(Admission admission, fasams_db db, JobLog job)
+        {
+            Admission existing = db.Admissions.Find(admission.SourceRecordIdentifier);
+            if(existing != null)
+            {
+                db.Entry(existing).CurrentValues.SetValues(admission);
             }
-            
+            else
+            {
+                db.Admissions.Add(admission);
+            }
+            UpsertJobLog(job, db);
+        }
+        public void UpsertAdmission(Admission admission, fasams_db db)
+        {
+            Admission existing = db.Admissions.Find(admission.SourceRecordIdentifier);
+            if (existing != null)
+            {
+                db.Entry(existing).CurrentValues.SetValues(admission);
+            }
+            else
+            {
+                db.Admissions.Add(admission);
+            }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "AD", SourceRecordId = admission.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+        }
+        public void UpsertAdmission(Admission admission)
+        {
+            using(var db = new fasams_db())
+            {
+                Admission existing = db.Admissions
+                    .SingleOrDefault(a => a.SourceRecordIdentifier == admission.SourceRecordIdentifier);
+                if (existing == null)
+                {
+                    db.Admissions.Add(admission);
+                }
+                else
+                {
+                    db.Entry(existing).CurrentValues.SetValues(admission);
+                }
+                db.SaveChanges();
+            }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "AD", SourceRecordId = admission.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+        }
+        public void UpsertPerformanceOutcomeMeasure(PerformanceOutcomeMeasure perf, fasams_db db, JobLog job)
+        {
+            PerformanceOutcomeMeasure existing = db.PerformanceOutcomeMeasures.Find(perf.SourceRecordIdentifier);
+            if (existing != null)
+            {
+                db.Entry(existing).CurrentValues.SetValues(perf);
+            }
+            else
+            {
+                db.PerformanceOutcomeMeasures.Add(perf);
+            }
+            UpsertJobLog(job, db);
+        }
+        public void UpsertPerformanceOutcomeMeasure(PerformanceOutcomeMeasure perf, fasams_db db)
+        {
+            PerformanceOutcomeMeasure existing = db.PerformanceOutcomeMeasures.Find(perf.SourceRecordIdentifier);
+            if (existing != null)
+            {
+                db.Entry(existing).CurrentValues.SetValues(perf);
+            }
+            else
+            {
+                db.PerformanceOutcomeMeasures.Add(perf);
+            }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "PM", SourceRecordId = perf.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+        }
+        public void UpsertPerformanceOutcomeMeasure(PerformanceOutcomeMeasure perf)
+        {
+            using (var db = new fasams_db())
+            {
+                PerformanceOutcomeMeasure existing = db.PerformanceOutcomeMeasures
+                    .SingleOrDefault(a => a.SourceRecordIdentifier == perf.SourceRecordIdentifier);
+                if (existing == null)
+                {
+                    db.PerformanceOutcomeMeasures.Add(perf);
+                }
+                else
+                {
+                    db.Entry(existing).CurrentValues.SetValues(perf);
+                }
+                db.SaveChanges();
+            }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "PM", SourceRecordId = perf.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+        }
+        public void UpsertEvaluation(Evaluation evaluation, fasams_db db, JobLog job)
+        {
+            Evaluation existing = db.Evaluations.Find(evaluation.SourceRecordIdentifier);
+            if (existing != null)
+            {
+                db.Entry(existing).CurrentValues.SetValues(evaluation);
+            }
+            else
+            {
+                db.Evaluations.Add(evaluation);
+            }
+            UpsertJobLog(job, db);
+        }
+        public void UpsertEvaluation(Evaluation evaluation, fasams_db db)
+        {
+            Evaluation existing = db.Evaluations.Find(evaluation.SourceRecordIdentifier);
+            if (existing != null)
+            {
+                db.Entry(existing).CurrentValues.SetValues(evaluation);
+            }
+            else
+            {
+                db.Evaluations.Add(evaluation);
+            }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = evaluation.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+        }
+        public void UpsertEvaluation(Evaluation evaluation)
+        {
+            using (var db = new fasams_db())
+            {
+                Evaluation existing = db.Evaluations
+                    .SingleOrDefault(a => a.SourceRecordIdentifier == evaluation.SourceRecordIdentifier);
+                if (existing == null)
+                {
+                    db.Evaluations.Add(evaluation);
+                }
+                else
+                {
+                    db.Entry(existing).CurrentValues.SetValues(evaluation);
+                }
+                db.SaveChanges();
+            }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "EV", SourceRecordId = evaluation.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+        }
+        public void UpsertDiagnosis(Diagnosis diagnosis, fasams_db db, JobLog job)
+        {
+            Diagnosis existing = db.Diagnoses.Find(diagnosis.SourceRecordIdentifier);
+            if (existing != null)
+            {
+                db.Entry(existing).CurrentValues.SetValues(diagnosis);
+            }
+            else
+            {
+                db.Diagnoses.Add(diagnosis);
+            }
+            UpsertJobLog(job, db);
+        }
+        public void UpsertDiagnosis(Diagnosis diagnosis, fasams_db db)
+        {
+            Diagnosis existing = db.Diagnoses.Find(diagnosis.SourceRecordIdentifier);
+            if (existing != null)
+            {
+                db.Entry(existing).CurrentValues.SetValues(diagnosis);
+            }
+            else
+            {
+                db.Diagnoses.Add(diagnosis);
+            }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = diagnosis.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+        }
+        public void UpsertDiagnosis(Diagnosis diagnosis)
+        {
+            using (var db = new fasams_db())
+            {
+                Diagnosis existing = db.Diagnoses
+                    .SingleOrDefault(a => a.SourceRecordIdentifier == diagnosis.SourceRecordIdentifier);
+                if (existing == null)
+                {
+                    db.Diagnoses.Add(diagnosis);
+                }
+                else
+                {
+                    db.Entry(existing).CurrentValues.SetValues(diagnosis);
+                }
+                db.SaveChanges();
+            }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DX", SourceRecordId = diagnosis.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
+        }
+        public void UpsertDischarge(Discharge discharge, fasams_db db, JobLog job)
+        {
+            Discharge existing = db.Discharges.Find(discharge.SourceRecordIdentifier);
+            if (existing != null)
+            {
+                db.Entry(existing).CurrentValues.SetValues(discharge);
+            }
+            else
+            {
+                db.Discharges.Add(discharge);
+            }
+            UpsertJobLog(job, db);
+        }
+        public void UpsertDischarge(Discharge discharge, fasams_db db)
+        {
+            Discharge existing = db.Discharges.Find(discharge.SourceRecordIdentifier);
+            if (existing != null)
+            {
+                db.Entry(existing).CurrentValues.SetValues(discharge);
+            }
+            else
+            {
+                db.Discharges.Add(discharge);
+            }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DC", SourceRecordId = discharge.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow }, db);
+        }
+        public void UpsertDischarge(Discharge discharge)
+        {
+            using (var db = new fasams_db())
+            {
+                Discharge existing = db.Discharges
+                    .SingleOrDefault(a => a.SourceRecordIdentifier == discharge.SourceRecordIdentifier);
+                if (existing == null)
+                {
+                    db.Discharges.Add(discharge);
+                }
+                else
+                {
+                    db.Entry(existing).CurrentValues.SetValues(discharge);
+                }
+                db.SaveChanges();
+            }
+            UpsertJobLog(new JobLog { JobNumber = PAMConvert.JobNumber, RecordType = "DC", SourceRecordId = discharge.SourceRecordIdentifier, CreatedAt = DateTime.UtcNow });
         }
         public void UpsertServiceEvent(ServiceEvent serviceEvent)
         {
@@ -912,24 +1255,6 @@ namespace PAM2FASAMS.Utilities
                 db.SaveChanges();
             }
         }
-        public void UpsertJobLog(JobLog job)
-        {
-            using(var db = new fasams_db())
-            {
-                JobLog existing = db.JobLogs
-                    .SingleOrDefault(j => j.JobNumber == job.JobNumber && j.RecordType == job.RecordType && j.SourceRecordId == job.SourceRecordId);
-
-                if(existing == null)
-                {
-                    db.JobLogs.Add(job);
-                }
-                else
-                {
-                    db.Entry(existing).CurrentValues.SetValues(job);
-                }
-                db.SaveChanges();
-            }
-        }
         public void UpsertJobLog(JobLog job, fasams_db db)
         {
             
@@ -945,6 +1270,24 @@ namespace PAM2FASAMS.Utilities
                 db.Entry(existing).CurrentValues.SetValues(job);
             }
             //db.SaveChanges();
+        }
+        public void UpsertJobLog(JobLog job)
+        {
+            using (var db = new fasams_db())
+            {
+                JobLog existing = db.JobLogs
+                    .SingleOrDefault(j => j.JobNumber == job.JobNumber && j.RecordType == job.RecordType && j.SourceRecordId == job.SourceRecordId);
+
+                if (existing == null)
+                {
+                    db.JobLogs.Add(job);
+                }
+                else
+                {
+                    db.Entry(existing).CurrentValues.SetValues(job);
+                }
+                db.SaveChanges();
+            }
         }
     }
 }
