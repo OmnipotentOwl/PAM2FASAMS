@@ -33,7 +33,8 @@ Admin operation mode:
 ```
 PAM2FASAMS.exe admin [OPTIONS]
 -d, --directory    Required. Directory for operation
--t, --type         Required. Administrative task type. (Type Options: DUMP_DB, LOAD_DB, LOAD_FILE)
+-t, --type         Required. Administrative task type. (Type Options: DUMP_DB, LOAD_DB, DUMP_FILE, LOAD_FILE)
+-f, --filetype     Optional. File type to export. (Client, TreatmentEpisode, ServiceEvent, Subcontract)
 --verbose          (Default: false) Prints all messages to standard output.
 --help             Display help screen.
 --version          Display version information.
