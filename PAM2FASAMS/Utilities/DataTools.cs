@@ -721,6 +721,17 @@ namespace PAM2FASAMS.Utilities
                 return db.JobLogs.Where(j => j.UpdatedAt == null).ToList();
             }
         }
+        public List<Subcontract> GetAllSubcontracts()
+        {
+            using(var db = new fasams_db())
+            {
+                return db.Subcontracts
+                    .Include(x => x.SubcontractServices)
+                    .Include(x => x.SubcontractOutputMeasures)
+                    .Include(x => x.SubcontractOutcomeMeasures)
+                    .ToList();
+            }
+        }
         public int GetMaxJobNumber()
         {
             using (var db = new fasams_db())

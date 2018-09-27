@@ -21,6 +21,24 @@ namespace PAM2FASAMS
         {
             Console.WriteLine("NOT YET IMPLIMENTED");
         }
+        public void ExecuteExportFile(AdminOptions options)
+        {
+            DirectoryInfo d = new DirectoryInfo(options.Directory);
+            switch (options.FileType)
+            {
+                case DBFileType.Client:
+                    break;
+                case DBFileType.TreatmentEpisode:
+                    break;
+                case DBFileType.ServiceEvent:
+                    break;
+                case DBFileType.Subcontract:
+                    ExportContractData(d);
+                    break;
+                default:
+                    break;
+            }
+        }
         public void ExecuteLoadFile(AdminOptions options)
         {
             DirectoryInfo d = new DirectoryInfo(options.Directory);
@@ -109,6 +127,22 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed loading contract file into database!");
         }
+        private void ExportContractData(DirectoryInfo directory)
+        {
+            //Console.WriteLine("Loading Contract file into database:");
+            Subcontracts Subcontracts = new Subcontracts();
+            var dt = new DataTools();
+            try
+            {
+                Subcontracts.subcontracts = dt.GetAllSubcontracts();
+                WriteXml(Subcontracts, null, "SubcontractDataSet",directory.FullName);
+            }
+            catch (Exception ex)
+            {
+                WriteErrorLog(ex, "ContractFile", directory.Name);
+            }
+            Console.WriteLine("Completed exporting contracts into file!");
+        }
 
         private object ReadXml(object dataStructure, FileInfo file)
         {
@@ -118,6 +152,19 @@ namespace PAM2FASAMS
             dataStructure = serializer.Deserialize(reader);
             reader.Close();
             return dataStructure;
+        }
+        private void WriteXml(object dataStructure, string outputFile, string outputFileName, string outputPath)
+        {
+            if (outputFile == null)
+            {
+                outputFile = outputPath + "\\" + outputFileName + "_" + (DateTime.Now.ToString("yyyyMMddHHmmss")) + ".xml";
+            }
+            Console.WriteLine("Writing Output File {0}", outputFile);
+            Type t = dataStructure.GetType();
+            XmlSerializer writer = new XmlSerializer(t);
+            FileStream file = File.Create(outputFile);
+            writer.Serialize(file, dataStructure);
+            file.Close();
         }
         private static void WriteErrorLog(Exception ex, string outputFileName, string outputPath, string inputFile, int rowNum)
         {

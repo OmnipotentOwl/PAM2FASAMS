@@ -87,6 +87,9 @@ namespace PAM2FASAMS
                 case AdminTask.LOAD_DB:
                     functions.ExecuteLoadDatabase(options);
                     break;
+                case AdminTask.DUMP_FILE:
+                    functions.ExecuteExportFile(options);
+                    break;
                 case AdminTask.LOAD_FILE:
                     functions.ExecuteLoadFile(options);
                     break;

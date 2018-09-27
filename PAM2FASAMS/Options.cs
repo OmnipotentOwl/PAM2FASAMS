@@ -28,7 +28,15 @@ namespace PAM2FASAMS
     {
         DUMP_DB,
         LOAD_DB,
+        DUMP_FILE,
         LOAD_FILE
+    }
+    public enum DBFileType
+    {
+        Client,
+        TreatmentEpisode,
+        ServiceEvent,
+        Subcontract
     }
     [Verb("run",HelpText ="Executes standard operation mode.")]
     public class Options
@@ -62,6 +70,9 @@ namespace PAM2FASAMS
 
         [Option('t', "type", Required = true, HelpText = "Administrative task type")]
         public AdminTask Type { get; set; }
+
+        [Option('f', "filetype", Required = false, HelpText = "File type to export")]
+        public DBFileType FileType { get; set; }
 
         // Omitting long name, defaults to name of property, ie "--verbose"
         [Option(Default = false, HelpText = "Prints all messages to standard output.")]
