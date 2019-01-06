@@ -21,7 +21,7 @@ namespace PAM2FASAMS
         {
             Console.WriteLine("NOT YET IMPLIMENTED");
         }
-        public void ExecuteExportFile(AdminOptions options)
+        public async Task ExecuteExportFileAsync(AdminOptions options)
         {
             DirectoryInfo d = new DirectoryInfo(options.Directory);
             switch (options.FileType)
@@ -33,30 +33,48 @@ namespace PAM2FASAMS
                 case DBFileType.ServiceEvent:
                     break;
                 case DBFileType.Subcontract:
-                    ExportContractData(d);
+                    await ExportContractDataAsync(d);
                     break;
                 default:
                     break;
             }
         }
-        public void ExecuteLoadFile(AdminOptions options)
+        public async Task ExecuteLoadFileAsync(AdminOptions options)
         {
             DirectoryInfo d = new DirectoryInfo(options.Directory);
             FileInfo[] files = d.GetFiles();
+            DataTools dt = new DataTools();
+            PAMConvert.JobNumber = dt.GetMaxJobNumber() + 1;
             foreach (FileInfo file in files)
             {
                 
                 switch (file.Name)
                 {
-                    case "Contract.xml":
+                    case string a when a.Contains("Contract"):
                         Console.WriteLine("Loading file: {0}", file.Name);
-                        LoadContractFile(file);
+                        await LoadContractFileAsync(file);
+                        break;
+
+                    case string a when a.Contains("ClientDataSet"):
+                        Console.WriteLine("Loading file: {0}", file.Name);
+                        await LoadProviderClientFileAsync(file);
+                        break;
+
+                    case string a when a.Contains("Treatment Episode"):
+                        Console.WriteLine("Loading file: {0}", file.Name);
+                        await LoadTreatmentEpisodeFileAsync(file);
+                        break;
+
+                    case string a when a.Contains("Service Event"):
+                        Console.WriteLine("Loading file: {0}", file.Name);
+                        await LoadServiceEventFileAsync(file);
                         break;
                 }
             }
+            await dt.MarkJobBatchComplete(PAMConvert.JobNumber);
         }
 
-        private void LoadContractFile(FileInfo file)
+        private async Task LoadContractFileAsync(FileInfo file)
         {
             Console.WriteLine("Loading Contract file into database:");
             Subcontracts Subcontracts = new Subcontracts();
@@ -100,7 +118,7 @@ namespace PAM2FASAMS
 
                     try
                     {
-                        dt.UpsertSubContract(subcontract);
+                        await dt.UpsertSubContract(subcontract);
                         Console.WriteLine("Added Contract: {0}, {1}, {2}", subcontract.ContractNumber, subcontract.SubcontractNumber, subcontract.AmendmentNumber);
                     }
                     catch (DbEntityValidationException ex)
@@ -127,14 +145,250 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed loading contract file into database!");
         }
-        private void ExportContractData(DirectoryInfo directory)
+        private async Task LoadProviderClientFileAsync(FileInfo file)
+        {
+            Console.WriteLine("Loading ProviderClient file into database:");
+            ProviderClients ProviderClients = new ProviderClients();
+            var dt = new DataTools();
+            try
+            {
+                ProviderClients = (ProviderClients)ReadXml(ProviderClients, file);
+                foreach (var item in ProviderClients.clients)
+                {
+                    if (item.ProviderClientIdentifiers != null)
+                    {
+                        foreach (var row in item.ProviderClientIdentifiers)
+                        {
+                            row.ClientSourceId = item.SourceRecordIdentifier;
+                            row.FederalTaxIdentifier = item.FederalTaxIdentifier;
+                        }
+                    } //fixes relationships
+                    if (item.ProviderClientEmailAddresses != null)
+                    {
+                        foreach (var row in item.ProviderClientEmailAddresses)
+                        {
+                            row.ClientSourceId = item.SourceRecordIdentifier;
+                            row.FederalTaxIdentifier = item.FederalTaxIdentifier;
+                        }
+                    } //fixes relationships
+                    if (item.ProviderClientPhones != null)
+                    {
+                        foreach (var row in item.ProviderClientPhones)
+                        {
+                            row.ClientSourceId = item.SourceRecordIdentifier;
+                            row.FederalTaxIdentifier = item.FederalTaxIdentifier;
+                        }
+                    } //fixes relationships
+                    if (item.ProviderClientPhysicalAddresses != null)
+                    {
+                        foreach (var row in item.ProviderClientPhysicalAddresses)
+                        {
+                            row.ClientSourceId = item.SourceRecordIdentifier;
+                            row.FederalTaxIdentifier = item.FederalTaxIdentifier;
+                        }
+                    } //fixes relationships
+
+                    try
+                    {
+                        await dt.UpsertProviderClient(item);
+                        Console.WriteLine("Added ProviderClient: {0}, {1}", item.SourceRecordIdentifier, item.FederalTaxIdentifier);
+                    }
+                    catch (DbEntityValidationException ex)
+                    {
+                        // Retrieve the error messages as a list of strings.
+                        var errorMessages = ex.EntityValidationErrors
+                                .SelectMany(x => x.ValidationErrors)
+                                .Select(x => x.ErrorMessage);
+
+                        // Join the list to a single string.
+                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                        // Combine the original exception message with the new one.
+                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                        // Throw a new DbEntityValidationException with the improved exception message.
+                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteErrorLog(ex, "ProviderClient", file.DirectoryName);
+            }
+            Console.WriteLine("Completed loading ProviderClient file into database!");
+        }
+        private async Task LoadTreatmentEpisodeFileAsync(FileInfo file)
+        {
+            Console.WriteLine("Loading TreatmentEpisode file into database:");
+            TreatmentEpisodeDataSet TreatmentEpisodeDataSet = new TreatmentEpisodeDataSet();
+            var dt = new DataTools();
+            try
+            {
+                TreatmentEpisodeDataSet = (TreatmentEpisodeDataSet)ReadXml(TreatmentEpisodeDataSet, file);
+                foreach (var item in TreatmentEpisodeDataSet.TreatmentEpisodes)
+                {
+                    if (item.Admissions != null)
+                    {
+                        foreach (var row in item.Admissions)
+                        {
+                            row.TreatmentSourceId = item.SourceRecordIdentifier;
+                            row.FederalTaxIdentifier = item.FederalTaxIdentifier;
+
+                            if (row.PerformanceOutcomeMeasures != null)
+                            {
+                                foreach (var subrow in row.PerformanceOutcomeMeasures)
+                                {
+                                    subrow.Admission_SourceRecordIdentifier = row.SourceRecordIdentifier;
+                                }
+                            } //fixes relationships
+                            if (row.Evaluations != null)
+                            {
+                                foreach (var subrow in row.Evaluations)
+                                {
+                                    subrow.Admission_SourceRecordIdentifier = row.SourceRecordIdentifier;
+                                }
+                            } //fixes relationships
+                            if (row.Diagnoses != null)
+                            {
+                                foreach (var subrow in row.Diagnoses)
+                                {
+                                    subrow.Admission_SourceRecordIdentifier = row.SourceRecordIdentifier;
+                                }
+                            } //fixes relationships
+                            if (row.Discharge != null)
+                            {
+                                if (row.Discharge.Evaluations != null)
+                                {
+                                    foreach (var subrow in row.Discharge.Evaluations)
+                                    {
+                                        subrow.Discharge_SourceRecordIdentifier = row.Discharge.SourceRecordIdentifier;
+                                    }
+                                } //fixes relationships
+                                if (row.Discharge.Diagnoses != null)
+                                {
+                                    foreach (var subrow in row.Discharge.Diagnoses)
+                                    {
+                                        subrow.Discharge_SourceRecordIdentifier = row.Discharge.SourceRecordIdentifier;
+                                    }
+                                } //fixes relationships
+
+                            } //fixes relationships
+                        }
+
+                    } //fixes relationships
+                    if (item.ImmediateDischarges != null)
+                    {
+                        foreach (var row in item.ImmediateDischarges)
+                        {
+                            row.TreatmentSourceId = item.SourceRecordIdentifier;
+                            row.FederalTaxIdentifier = item.FederalTaxIdentifier;
+                        }
+                    } //fixes relationships
+
+                    try
+                    {
+                        await dt.UpsertTreatmentSession(item);
+                        Console.WriteLine("Added TreatmentEpisode : {0}, {1}", item.SourceRecordIdentifier, item.FederalTaxIdentifier);
+                    }
+                    catch (DbEntityValidationException ex)
+                    {
+                        // Retrieve the error messages as a list of strings.
+                        var errorMessages = ex.EntityValidationErrors
+                                .SelectMany(x => x.ValidationErrors)
+                                .Select(x => x.ErrorMessage);
+
+                        // Join the list to a single string.
+                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                        // Combine the original exception message with the new one.
+                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                        // Throw a new DbEntityValidationException with the improved exception message.
+                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteErrorLog(ex, "TreatmentEpisode", file.DirectoryName);
+            }
+            Console.WriteLine("Completed loading TreatmentEpisode file into database!");
+        }
+        private async Task LoadServiceEventFileAsync(FileInfo file)
+        {
+            Console.WriteLine("Loading ServiceEvent file into database:");
+            ServiceEvents ServiceEvents = new ServiceEvents();
+            var dt = new DataTools();
+            try
+            {
+                ServiceEvents = (ServiceEvents)ReadXml(ServiceEvents, file);
+                foreach (var item in ServiceEvents.serviceEvents)
+                {
+                    if (item.ServiceEventCoveredServiceModifiers != null)
+                    {
+                        foreach (var row in item.ServiceEventCoveredServiceModifiers)
+                        {
+                            row.EventSourceId = item.SourceRecordIdentifier;
+                            row.FederalTaxIdentifier = item.FederalTaxIdentifier;
+                            row.TypeCode = item.TypeCode;
+                        }
+                    } //fixes relationships
+                    if (item.ServiceEventHcpcsProcedureModifiers != null)
+                    {
+                        foreach (var row in item.ServiceEventHcpcsProcedureModifiers)
+                        {
+                            row.EventSourceId = item.SourceRecordIdentifier;
+                            row.FederalTaxIdentifier = item.FederalTaxIdentifier;
+                            row.TypeCode = item.TypeCode;
+                        }
+                    } //fixes relationships
+                    if (item.ServiceEventExpenditureModifiers != null)
+                    {
+                        foreach (var row in item.ServiceEventExpenditureModifiers)
+                        {
+                            row.EventSourceId = item.SourceRecordIdentifier;
+                            row.FederalTaxIdentifier = item.FederalTaxIdentifier;
+                            row.TypeCode = item.TypeCode;
+                        }
+                    } //fixes relationships
+                    
+                    try
+                    {
+                        await dt.UpsertServiceEvent(item);
+                        Console.WriteLine("Added ServiceEvent: {0}, {1}", item.SourceRecordIdentifier, item.FederalTaxIdentifier);
+                    }
+                    catch (DbEntityValidationException ex)
+                    {
+                        // Retrieve the error messages as a list of strings.
+                        var errorMessages = ex.EntityValidationErrors
+                                .SelectMany(x => x.ValidationErrors)
+                                .Select(x => x.ErrorMessage);
+
+                        // Join the list to a single string.
+                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                        // Combine the original exception message with the new one.
+                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                        // Throw a new DbEntityValidationException with the improved exception message.
+                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteErrorLog(ex, "ServiceEvent", file.DirectoryName);
+            }
+            Console.WriteLine("Completed loading ServiceEvent file into database!");
+        }
+        private async Task ExportContractDataAsync(DirectoryInfo directory)
         {
             //Console.WriteLine("Loading Contract file into database:");
             Subcontracts Subcontracts = new Subcontracts();
             var dt = new DataTools();
             try
             {
-                Subcontracts.subcontracts = dt.GetAllSubcontracts();
+                Subcontracts.subcontracts = await dt.GetAllSubcontracts();
                 WriteXml(Subcontracts, null, "SubcontractDataSet",directory.FullName);
             }
             catch (Exception ex)

@@ -1,4 +1,5 @@
-﻿using PAM2FASAMS.OutputFormats;
+﻿using PAM2FASAMS.Models.Utils;
+using PAM2FASAMS.OutputFormats;
 using PAM2FASAMS.Utilities;
 using System;
 using System.Collections.Generic;
@@ -21,83 +22,35 @@ namespace PAM2FASAMS
         public static int JobNumber;
         #endregion
         #region Conversion Functions
-        public void RunBatchJob(IEnumerable<InputFile> inputFiles, Options options)
+        public async Task RunBatchJobAsync(IEnumerable<InputFile> inputFiles, Options options)
         {
             var dt = new DataTools();
             JobNumber = dt.GetMaxJobNumber()+1;
             ProviderClients clientDataSet = new ProviderClients { clients = new List<ProviderClient>() };
             TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
             ServiceEvents serviceEventsDataSet = new ServiceEvents { serviceEvents = new List<ServiceEvent>() };
-            foreach (InputFile file in inputFiles)
-            {
-                options.InputFile = options.Directory + '/' + file.FileName;
-                Console.WriteLine("File: {0}, Type: {1}", file.FileName, file.RecordType);
-                if (!File.Exists(options.InputFile))
-                {
-                    Console.WriteLine("File: {0} not found, skipping file.", file.FileName);
-                    continue;
-                }
-                switch (file.RecordType)
-                {
-                    case "IDUP":
-                        break;
-                    case "SSN":
-                        InvokeSSNConversion(clientDataSet, options.InputFile);
-                        break;
-                    case "DEMO":
-                        InvokeDemoConversion(clientDataSet, options.InputFile);
-                        break;
-                    case "SAPERFA":
-                        InvokeSAAdmitConversion(treatmentEpisodeDataSet, options.InputFile);
-                        break;
-                    case "SAPERFD":
-                        InvokeSADischargeConversion(treatmentEpisodeDataSet, options.InputFile);
-                        break;
-                    case "SADT":
-                        break;
-                    case "PERF":
-                        InvokePerfConversion(treatmentEpisodeDataSet, options.InputFile);
-                        break;
-                    case "CFARS":
-                        InvokeCFARSConversion(treatmentEpisodeDataSet, options.InputFile);
-                        break;
-                    case "FARS":
-                        InvokeFARSConversion(treatmentEpisodeDataSet, options.InputFile);
-                        break;
-                    case "ASAM":
-                        break;
-                    case "SERV":
-                        InvokeServConversion(serviceEventsDataSet, options.InputFile);
-                        break;
-                    case "EVNT":
-                        InvokeEvntConversion(serviceEventsDataSet, options.InputFile);
-                        break;
-                    case "SANDR":
-                        break;
-                    default:
-                        break;
-                }
-            }
-            InvokeChronologicalReorganizationValidation();
+            await ProcessInputFiles(inputFiles, options, clientDataSet, treatmentEpisodeDataSet, serviceEventsDataSet);
+            await InvokeChronologicalReorganizationValidation();
             clientDataSet.clients.Clear();
             treatmentEpisodeDataSet.TreatmentEpisodes.Clear();
             serviceEventsDataSet.serviceEvents.Clear();
-            CreateOutputDataSet(clientDataSet, DataSetTypes.Client);
-            CreateOutputDataSet(treatmentEpisodeDataSet, DataSetTypes.TreatmentEpisode);
-            CreateOutputDataSet(serviceEventsDataSet, DataSetTypes.ServiceEvent);
+            await CreateOutputDataSet(clientDataSet, DataSetTypes.Client);
+            await CreateOutputDataSet(treatmentEpisodeDataSet, DataSetTypes.TreatmentEpisode);
+            await CreateOutputDataSet(serviceEventsDataSet, DataSetTypes.ServiceEvent);
             WriteXml(clientDataSet, null, "ClientDataSet", options.Directory);
             WriteXml(treatmentEpisodeDataSet, null, "TreatmentEpisodeDataSet", options.Directory);
             WriteXml(serviceEventsDataSet, null, "ServiceEventDataSet", options.Directory);
+            await dt.MarkJobBatchComplete(JobNumber);
         }
-        public void InvokeSSNConversion(string inputFile, string outputFile)
+        public async Task InvokeSSNConversionAsync(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SSN update file..");
             ProviderClients clientDataSet = new ProviderClients { clients = new List<ProviderClient>() };
-            InvokeSSNConversion(clientDataSet, inputFile);
+            await InvokeSSNConversionAsync(clientDataSet, inputFile);
             WriteXml(clientDataSet, outputFile, "ClientDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM SSN update file.");
         }
-        public void InvokeSSNConversion(ProviderClients clientDataSet, string inputFile)
+        public async Task InvokeSSNConversionAsync(ProviderClients clientDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SSN update file..");
             PAMMappingFile = @"InputFormats/PAM-SSN.xml";
@@ -114,11 +67,11 @@ namespace PAM2FASAMS
                 var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
                 var clientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "OldSSN").Single().Value));
                 var newClientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "NewSSN").Single().Value));
-                client = dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                client = await dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
                 fValidations.ProcessProviderClientIdentifiers(client, newClientId);
                 try
                 {
-                    dt.UpsertProviderClient(client);
+                    await dt.UpsertProviderClient(client);
                     clientDataSet.clients.Add(client);
                 }
                 catch (Exception ex)
@@ -133,15 +86,15 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed Conversion of PAM SSN update file.");
         }
-        public void InvokeDemoConversion(string inputFile, string outputFile)
+        public async Task InvokeDemoConversionAsync(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM DEMO file..");
             ProviderClients clientDataSet = new ProviderClients { clients = new List<ProviderClient>()};
-            InvokeDemoConversion(clientDataSet, inputFile);
+            await InvokeDemoConversionAsync(clientDataSet, inputFile);
             WriteXml(clientDataSet, outputFile, "ClientDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM DEMO file.");
         }
-        public void InvokeDemoConversion(ProviderClients clientDataSet, string inputFile)
+        public async Task InvokeDemoConversionAsync(ProviderClients clientDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM DEMO file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -169,15 +122,23 @@ namespace PAM2FASAMS
                     if (IsDelete)
                     {
                         var clientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
-                        client = dt.OpportuniticlyLoadProviderClient(clientDataSet, clientId, fedTaxId);
+                        client = await dt.OpportuniticlyLoadProviderClient(clientDataSet, clientId, fedTaxId);
                         client.action = "delete";
                     }
                     else
                     {
                         var sourceRecordId = (pamRow.Where(r => r.Name == "ClientID").Single().Value);
-                        client = dt.OpportuniticlyLoadProviderClient(clientDataSet, sourceRecordId, fedTaxId);
+                        var clientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
+                        client = await dt.OpportuniticlyLoadProviderClient(clientDataSet, sourceRecordId, fedTaxId);
+                        if(client.SourceRecordIdentifier == null)
+                        {
+                            client = await dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                        }
+                        if(client.SourceRecordIdentifier == null)
+                        {
+                            client.SourceRecordIdentifier = sourceRecordId;
+                        }
                         client.FederalTaxIdentifier = fedTaxId;
-                        client.SourceRecordIdentifier = sourceRecordId;
                         client.BirthDate = fValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "DOB").Single().Value));
                         client.FirstName = (pamRow.Where(r => r.Name == "First").Single().Value).Trim();
                         client.MiddleName = (pamRow.Where(r => r.Name == "Middle").Single().Value).Trim();
@@ -186,12 +147,16 @@ namespace PAM2FASAMS
                         client.GenderCode = (pamRow.Where(r => r.Name == "Gender").Single().Value);
                         client.RaceCode = (pamRow.Where(r => r.Name == "Race").Single().Value);
                         client.EthnicityCode = (pamRow.Where(r => r.Name == "Ethnic").Single().Value);
-                        var clientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
+                        if(client?.action == "delete")
+                        {
+                            client.action = "undo-delete";
+                        }
+                        
                         fValidations.ProcessProviderClientIdentifiers(client, clientId);
                     }
                     try
                     {
-                        dt.UpsertProviderClient(client);
+                        await dt.UpsertProviderClient(client);
                         clientDataSet.clients.Add(client);
                     }
                     catch (DbEntityValidationException ex)
@@ -223,15 +188,15 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed Conversion of PAM DEMO file.");
         }
-        public void InvokeSAAdmitConversion(string inputFile, string outputFile)
+        public async Task InvokeSAAdmitConversionAsync(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SA ADMSN file..");
             TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
-            InvokeSAAdmitConversion(treatmentEpisodeDataSet, inputFile);
+            await InvokeSAAdmitConversionAsync(treatmentEpisodeDataSet, inputFile);
             WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM SA ADMSN file.");
         }
-        public void InvokeSAAdmitConversion(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
+        public async Task InvokeSAAdmitConversionAsync(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SA ADMSN file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -255,23 +220,23 @@ namespace PAM2FASAMS
                 {
                     var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
                     var clientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
-                    var client = dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    var client = await dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    var type = pValidations.ValidateEvalPurpose(FileType.SAPERFA, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
+                    string evalDate = fValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
+                    TreatmentEpisode treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
                     if (IsDelete)
                     {
 
                     }
                     else
                     {
-                        var type = pValidations.ValidateEvalPurpose(FileType.SAPERFA, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
-                        string evalDate = fValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
                         switch (type)
                         {
                             case PAMValidations.UpdateType.Admission:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
                                     string programCode = fValidations.ValidateAdmissionProgramCode("SA", client.BirthDate, evalDate);
                                     string subContNum = (pamRow.Where(r => r.Name == "ContNum1").Single().Value);
-                                    var contract = dt.OpportuniticlyLoadSubcontract(subContNum, evalDate, fedTaxId);
+                                    var contract = await dt.OpportuniticlyLoadSubcontract(subContNum, evalDate, fedTaxId);
                                     if (treatmentEpisode.Admissions != null && treatmentEpisode.Admissions.Count > 0)
                                     {
                                         Admission initialAdmit = treatmentEpisode.Admissions.Where(a => a.TypeCode == "1").Single();
@@ -280,7 +245,7 @@ namespace PAM2FASAMS
                                             treatmentEpisode = new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = client.SourceRecordIdentifier, FederalTaxIdentifier = fedTaxId, Admissions = new List<Admission>() };
                                         }
                                     }
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     if (admission.AdmissionDate == null)
                                     {
                                         admission.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
@@ -484,67 +449,43 @@ namespace PAM2FASAMS
                                     }
                                     fValidations.ProcessDiagnosis(admission, updatedDx, evalDate);
                                     fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
+                                    
                                     break;
                                 }
                             case PAMValidations.UpdateType.ImDischarge:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    ImmediateDischarge immediateDischarge = dt.OpportuniticlyLoadImmediateDischarge(treatmentEpisode, type, evalDate);
+                                    ImmediateDischarge immediateDischarge = await dt.OpportuniticlyLoadImmediateDischarge(treatmentEpisode, type, evalDate);
                                     immediateDischarge.StaffEducationLevelCode = fValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value));
                                     immediateDischarge.StaffIdentifier = fValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value));
                                     immediateDischarge.EvaluationDate = evalDate;
                                     fValidations.ProcessImmediateDischarge(treatmentEpisode, immediateDischarge);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
                                     break;
                                 }
                         }
+                    }
+                    try
+                    {
+                        await dt.UpsertTreatmentSession(treatmentEpisode);
+                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                        {
+                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                        }
+                    }
+                    catch (DbEntityValidationException ex)
+                    {
+                        // Retrieve the error messages as a list of strings.
+                        var errorMessages = ex.EntityValidationErrors
+                                .SelectMany(x => x.ValidationErrors)
+                                .Select(x => x.ErrorMessage);
+
+                        // Join the list to a single string.
+                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                        // Combine the original exception message with the new one.
+                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                        // Throw a new DbEntityValidationException with the improved exception message.
+                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
                     }
                 }
                 catch (Exception ex)
@@ -560,15 +501,15 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed Conversion of PAM SA ADMSN file.");
         }
-        public void InvokeSADischargeConversion(string inputFile, string outputFile)
+        public async Task InvokeSADischargeConversionAsync(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SA DCHRG file..");
             TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
-            InvokeSADischargeConversion(treatmentEpisodeDataSet, inputFile);
+            await InvokeSADischargeConversionAsync(treatmentEpisodeDataSet, inputFile);
             WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM SA DCHRG file.");
         }
-        public void InvokeSADischargeConversion(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
+        public async Task InvokeSADischargeConversionAsync(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SA DCHRG file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -592,7 +533,7 @@ namespace PAM2FASAMS
                 {
                     var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
                     var clientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
-                    var client = dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    var client = await dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
                     if (IsDelete)
                     {
 
@@ -606,9 +547,9 @@ namespace PAM2FASAMS
                             case PAMValidations.UpdateType.Discharge:
                                 {
                                     var dischargeType = pamRow.Where(r => r.Name == "Purpose").Single().Value;
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
-                                    Discharge discharge = dt.OpportuniticlyLoadDischarge(admission, evalDate);
+                                    TreatmentEpisode treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Discharge discharge = await dt.OpportuniticlyLoadDischarge(admission, evalDate);
                                     discharge.StaffEducationLevelCode = fValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value));
                                     discharge.StaffIdentifier = fValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value));
                                     discharge.TypeCode = "2";
@@ -763,7 +704,7 @@ namespace PAM2FASAMS
                                     fValidations.ProcessAdmission(treatmentEpisode, admission);
                                     try
                                     {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
+                                        await dt.UpsertTreatmentSession(treatmentEpisode);
                                         if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
                                         {
                                             treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
@@ -803,15 +744,15 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed Conversion of PAM SA DCHRG file.");
         }
-        public void InvokePerfConversion(string inputFile, string outputFile)
+        public async Task InvokePerfConversionAsync(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM PERF file..");
             TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
-            InvokePerfConversion(treatmentEpisodeDataSet, inputFile);
+            await InvokePerfConversionAsync(treatmentEpisodeDataSet, inputFile);
             WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM PERF file.");
         }
-        public void InvokePerfConversion(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
+        public async Task InvokePerfConversionAsync(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM PERF file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -837,23 +778,68 @@ namespace PAM2FASAMS
                 {
                     var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
                     var clientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
-                    var client = dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    var client = await dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    var type = pValidations.ValidateEvalPurpose(FileType.PERF, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
+                    string evalDate = fValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
+                    TreatmentEpisode treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
                     if (IsDelete)
                     {
-
-                    }
-                    else
-                    {
-                        var type = pValidations.ValidateEvalPurpose(FileType.PERF, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
-                        string evalDate = fValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
                         switch (type)
                         {
                             case PAMValidations.UpdateType.Admission:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    if(admission.ProgramAreaCode == "1" || admission.ProgramAreaCode == "3")
+                                    {
+                                        admission.action = "delete";
+                                    }
+                                    
+                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.Update:
+                                {
+                                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    PerformanceOutcomeMeasure performanceOutcomeMeasure = admission.PerformanceOutcomeMeasures.Where(p => p.InternalPerformanceOutcomeMeasureDate == DateTime.Parse(evalDate)).LastOrDefault();
+                                    performanceOutcomeMeasure.action = "delete";
+                                    fValidations.ProcessPerformanceOutcomeMeasure(admission, performanceOutcomeMeasure);
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    evaluation.action = "delete";
+                                    fValidations.ProcessEvaluation(admission, evaluation);
+                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.Discharge:
+                                {
+                                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Discharge discharge = await dt.OpportuniticlyLoadDischarge(admission, evalDate);
+                                    discharge.action = "delete";
+                                    Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    evaluation.action = "delete";
+                                    fValidations.ProcessEvaluation(discharge, evaluation);
+                                    fValidations.ProcessDischarge(admission, discharge);
+                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.ImDischarge:
+                                {
+                                    ImmediateDischarge immediateDischarge = await dt.OpportuniticlyLoadImmediateDischarge(treatmentEpisode, type, evalDate);
+                                    immediateDischarge.action = "delete";
+                                    fValidations.ProcessImmediateDischarge(treatmentEpisode, immediateDischarge);
+                                    break;
+                                }
+                        }
+                    }
+                    else
+                    {                      
+                        switch (type)
+                        {
+                            case PAMValidations.UpdateType.Admission:
+                                {
+                                    
                                     string programCode = fValidations.ValidateAdmissionProgramCode("MH", client.BirthDate, evalDate);
                                     string subContNum = (pamRow.Where(r => r.Name == "ContNum1").Single().Value);
-                                    var contract = dt.OpportuniticlyLoadSubcontract(subContNum, evalDate, fedTaxId);
+                                    var contract = await dt.OpportuniticlyLoadSubcontract(subContNum, evalDate, fedTaxId);
                                     if (treatmentEpisode.Admissions != null && treatmentEpisode.Admissions.Count > 0)
                                     {
                                         Admission initialAdmit = treatmentEpisode.Admissions.Where(a => a.TypeCode == "1").Single();
@@ -862,7 +848,7 @@ namespace PAM2FASAMS
                                             treatmentEpisode = new TreatmentEpisode { SourceRecordIdentifier = Guid.NewGuid().ToString(), ClientSourceRecordIdentifier = client.SourceRecordIdentifier, FederalTaxIdentifier = fedTaxId, Admissions = new List<Admission>() };
                                         }
                                     }
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     if (admission.AdmissionDate == null)
                                     {
                                         admission.SiteIdentifier = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
@@ -1063,37 +1049,16 @@ namespace PAM2FASAMS
                                     }
 
                                     fValidations.ProcessDiagnosis(admission, updatedDx, evalDate);
-                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
+                                    if (admission.action == "delete")
                                     {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
+                                        admission.action = "undo-delete";
                                     }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
+                                    fValidations.ProcessAdmission(treatmentEpisode, admission);                                  
                                     break;
                                 }
                             case PAMValidations.UpdateType.Update:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     PerformanceOutcomeMeasure performanceOutcomeMeasure = new PerformanceOutcomeMeasure
                                     {
                                         SourceRecordIdentifier = Guid.NewGuid().ToString(),
@@ -1254,43 +1219,19 @@ namespace PAM2FASAMS
                                         };
                                         if (!string.IsNullOrWhiteSpace(newEvaluation.ScoreCode))
                                         {
-                                            admission.Evaluations.Add(newEvaluation);
+                                            fValidations.ProcessEvaluation(admission, newEvaluation);
                                         }
                                     }
                                     fValidations.ProcessDiagnosis(admission, updatedDx, evalDate);
+                                    
                                     fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
                                     break;
                                 }
                             case PAMValidations.UpdateType.Discharge:
                                 {
                                     var dischargeType = pamRow.Where(r => r.Name == "Purpose").Single().Value;
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
-                                    Discharge discharge = dt.OpportuniticlyLoadDischarge(admission, evalDate);
+                                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Discharge discharge = await dt.OpportuniticlyLoadDischarge(admission, evalDate);
                                     discharge.StaffEducationLevelCode = fValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value));
                                     discharge.StaffIdentifier = fValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value));
                                     discharge.TypeCode = "2";
@@ -1462,69 +1403,52 @@ namespace PAM2FASAMS
 
                                     fValidations.ProcessPerformanceOutcomeMeasure(discharge, performanceOutcomeMeasure);
                                     fValidations.ProcessDiagnosis(admission, discharge, updatedDx, evalDate, dischargeType);
+                                    if(discharge.action == "delete")
+                                    {
+                                        discharge.action = "undo-delete";
+                                    }
                                     fValidations.ProcessDischarge(admission, discharge);
                                     fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
                                     break;
                                 }
                             case PAMValidations.UpdateType.ImDischarge:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    ImmediateDischarge immediateDischarge = dt.OpportuniticlyLoadImmediateDischarge(treatmentEpisode, type, evalDate);
+                                    ImmediateDischarge immediateDischarge = await dt.OpportuniticlyLoadImmediateDischarge(treatmentEpisode, type, evalDate);
                                     immediateDischarge.StaffEducationLevelCode = fValidations.ValidateFASAMSStaffEduLvlCode((pamRow.Where(r => r.Name == "StaffId").Single().Value));
                                     immediateDischarge.StaffIdentifier = fValidations.ValidateFASAMSStaffId((pamRow.Where(r => r.Name == "StaffId").Single().Value));
                                     immediateDischarge.EvaluationDate = evalDate;
+                                    if(immediateDischarge.action == "delete")
+                                    {
+                                        immediateDischarge.action = "undo-delete";
+                                    }
                                     fValidations.ProcessImmediateDischarge(treatmentEpisode, immediateDischarge);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
                                     break;
                                 }
                         }
+                    }
+                    try
+                    {
+                        await dt.UpsertTreatmentSession(treatmentEpisode);
+                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                        {
+                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                        }
+                    }
+                    catch (DbEntityValidationException ex)
+                    {
+                        // Retrieve the error messages as a list of strings.
+                        var errorMessages = ex.EntityValidationErrors
+                                .SelectMany(x => x.ValidationErrors)
+                                .Select(x => x.ErrorMessage);
+
+                        // Join the list to a single string.
+                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                        // Combine the original exception message with the new one.
+                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                        // Throw a new DbEntityValidationException with the improved exception message.
+                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
                     }
                 }
                 catch (Exception ex)
@@ -1540,15 +1464,15 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed Conversion of PAM PERF file.");
         }
-        public void InvokeCFARSConversion(string inputFile, string outputFile)
+        public async Task InvokeCFARSConversionAsync(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM CFARS file..");
             TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
-            InvokeCFARSConversion(treatmentEpisodeDataSet, inputFile);
+            await InvokeCFARSConversionAsync(treatmentEpisodeDataSet, inputFile);
             WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Writing of FASAMS CFARS data.");
         }
-        public void InvokeCFARSConversion(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
+        public async Task InvokeCFARSConversionAsync(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM CFARS file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -1573,21 +1497,49 @@ namespace PAM2FASAMS
                 {
                     var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
                     var clientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
-                    var client = dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    var client = await dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
                     string evalDate = fValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
+                    var type = pValidations.ValidateEvalPurpose(FileType.CFAR, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
+                    TreatmentEpisode treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                     if (IsDelete)
                     {
-
-                    }
-                    else
-                    {
-                        var type = pValidations.ValidateEvalPurpose(FileType.CFAR, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
                         switch (type)
                         {
                             case PAMValidations.UpdateType.Admission:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    evaluation.action = "delete";
+                                    fValidations.ProcessEvaluation(admission, evaluation);
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.Update:
+                                {
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    evaluation.action = "delete";
+                                    fValidations.ProcessEvaluation(admission, evaluation);
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.Discharge:
+                                {
+                                    Discharge discharge = await dt.OpportuniticlyLoadDischarge(admission, evalDate);
+                                    Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    evaluation.action = "delete";
+                                    fValidations.ProcessEvaluation(admission, evaluation);
+                                    break;
+                                }
+                        }
+                    }
+                    else
+                    {
+                        switch (type)
+                        {
+                            case PAMValidations.UpdateType.Admission:
+                                {
+                                    treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
                                     var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.CFAR, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
@@ -1604,38 +1556,11 @@ namespace PAM2FASAMS
                                             Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
                                         };
                                         admission.Evaluations.Add(newEvaluation);
-                                    }
-                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
                                     }
                                     break;
                                 }
                             case PAMValidations.UpdateType.Update:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
                                     var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.CFAR, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
@@ -1653,38 +1578,11 @@ namespace PAM2FASAMS
                                         };
                                         admission.Evaluations.Add(newEvaluation);
                                     }
-                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
                                     break;
                                 }
                             case PAMValidations.UpdateType.Discharge:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
-                                    Discharge discharge = dt.OpportuniticlyLoadDischarge(admission, evalDate);
+                                    Discharge discharge = await dt.OpportuniticlyLoadDischarge(admission, evalDate);
                                     Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
                                     var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.CFAR, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
@@ -1703,34 +1601,35 @@ namespace PAM2FASAMS
                                         discharge.Evaluations.Add(newEvaluation);
                                     }
                                     fValidations.ProcessDischarge(admission, discharge);
-                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
                                     break;
                                 }
+
                         }
+                    }
+                    fValidations.ProcessAdmission(treatmentEpisode, admission);
+                    try
+                    {
+                        await dt.UpsertTreatmentSession(treatmentEpisode);
+                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                        {
+                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                        }
+                    }
+                    catch (DbEntityValidationException ex)
+                    {
+                        // Retrieve the error messages as a list of strings.
+                        var errorMessages = ex.EntityValidationErrors
+                                .SelectMany(x => x.ValidationErrors)
+                                .Select(x => x.ErrorMessage);
+
+                        // Join the list to a single string.
+                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                        // Combine the original exception message with the new one.
+                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                        // Throw a new DbEntityValidationException with the improved exception message.
+                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
                     }
                 }
                 catch (Exception ex)
@@ -1746,15 +1645,15 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed Conversion of PAM CFARS file.");
         }
-        public void InvokeFARSConversion(string inputFile, string outputFile)
+        public async Task InvokeFARSConversionAsync(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM FARS file..");
             TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
-            InvokeFARSConversion(treatmentEpisodeDataSet, inputFile);
+            await InvokeFARSConversionAsync(treatmentEpisodeDataSet, inputFile);
             WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Writing of FASAMS FARS data.");
         }
-        public void InvokeFARSConversion(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
+        public async Task InvokeFARSConversionAsync(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM FARS file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -1779,69 +1678,50 @@ namespace PAM2FASAMS
                 {
                     var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
                     var clientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
-                    var client = dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    var client = await dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
                     string evalDate = fValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
+                    var type = pValidations.ValidateEvalPurpose(FileType.FARS, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
+                    TreatmentEpisode treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                     if (IsDelete)
                     {
-
-                    }
-                    else
-                    {
-                        var type = pValidations.ValidateEvalPurpose(FileType.FARS, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
                         switch (type)
                         {
                             case PAMValidations.UpdateType.Admission:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
-                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.FARS, pamRow);
-                                    if (evaluation == null || evaluation.ScoreCode != score)
-                                    {
-                                        Evaluation newEvaluation = new Evaluation
-                                        {
-                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
-                                            StaffEducationLevelCode = (pamRow.Where(r => r.Name == "EduLevel").Single().Value).Trim(),
-                                            StaffIdentifier = (pamRow.Where(r => r.Name == "FMHINum").Single().Value).Trim(),
-                                            TypeCode = "2",
-                                            ToolCode = toolCode,
-                                            EvaluationDate = evalDate,
-                                            ScoreCode = score,
-                                            Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
-                                        };
-                                        admission.Evaluations.Add(newEvaluation);
-                                    }
-                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
+                                    evaluation.action = "delete";
+                                    fValidations.ProcessEvaluation(admission, evaluation);
                                     break;
                                 }
                             case PAMValidations.UpdateType.Update:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    evaluation.action = "delete";
+                                    fValidations.ProcessEvaluation(admission, evaluation);
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.Discharge:
+                                {
+                                    Discharge discharge = await dt.OpportuniticlyLoadDischarge(admission, evalDate);
+                                    Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    evaluation.action = "delete";
+                                    fValidations.ProcessEvaluation(admission, evaluation);
+                                    break;
+                                }
+                        }
+                    }
+                    else
+                    {
+                        
+                        switch (type)
+                        {
+                            case PAMValidations.UpdateType.Admission:
+                                {
+                                    treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
                                     var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.FARS, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
@@ -1858,39 +1738,33 @@ namespace PAM2FASAMS
                                             Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
                                         };
                                         admission.Evaluations.Add(newEvaluation);
-                                    }
-                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
+                                    }                                   
+                                    break;
+                                }
+                            case PAMValidations.UpdateType.Update:
+                                {
+                                    Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
+                                    var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.FARS, pamRow);
+                                    if (evaluation == null || evaluation.ScoreCode != score)
                                     {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                                        Evaluation newEvaluation = new Evaluation
                                         {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
+                                            SourceRecordIdentifier = Guid.NewGuid().ToString(),
+                                            StaffEducationLevelCode = (pamRow.Where(r => r.Name == "EduLevel").Single().Value).Trim(),
+                                            StaffIdentifier = (pamRow.Where(r => r.Name == "FMHINum").Single().Value).Trim(),
+                                            TypeCode = "2",
+                                            ToolCode = toolCode,
+                                            EvaluationDate = evalDate,
+                                            ScoreCode = score,
+                                            Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier
+                                        };
+                                        admission.Evaluations.Add(newEvaluation);
+                                    }                                   
                                     break;
                                 }
                             case PAMValidations.UpdateType.Discharge:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
-                                    Discharge discharge = dt.OpportuniticlyLoadDischarge(admission, evalDate);
+                                    Discharge discharge = await dt.OpportuniticlyLoadDischarge(admission, evalDate);
                                     Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
                                     var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.FARS, pamRow);
                                     if (evaluation == null || evaluation.ScoreCode != score)
@@ -1909,34 +1783,34 @@ namespace PAM2FASAMS
                                         discharge.Evaluations.Add(newEvaluation);
                                     }
                                     fValidations.ProcessDischarge(admission, discharge);
-                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
                                     break;
                                 }
                         }
+                    }
+                    fValidations.ProcessAdmission(treatmentEpisode, admission);
+                    try
+                    {
+                        await dt.UpsertTreatmentSession(treatmentEpisode);
+                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                        {
+                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                        }
+                    }
+                    catch (DbEntityValidationException ex)
+                    {
+                        // Retrieve the error messages as a list of strings.
+                        var errorMessages = ex.EntityValidationErrors
+                                .SelectMany(x => x.ValidationErrors)
+                                .Select(x => x.ErrorMessage);
+
+                        // Join the list to a single string.
+                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                        // Combine the original exception message with the new one.
+                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                        // Throw a new DbEntityValidationException with the improved exception message.
+                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
                     }
                 }
                 catch (Exception ex)
@@ -1952,15 +1826,15 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed Conversion of PAM FARS file.");
         }
-        public void InvokeASAMConversion(string inputFile, string outputFile)
+        public async Task InvokeASAMConversionAsync(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM ASAM file..");
             TreatmentEpisodeDataSet treatmentEpisodeDataSet = new TreatmentEpisodeDataSet { TreatmentEpisodes = new List<TreatmentEpisode>() };
-            InvokeASAMConversion(treatmentEpisodeDataSet, inputFile);
+            await InvokeASAMConversionAsync(treatmentEpisodeDataSet, inputFile);
             WriteXml(treatmentEpisodeDataSet, outputFile, "TreatmentEpisodeDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Writing of FASAMS ASAM data.");
         }
-        public void InvokeASAMConversion(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
+        public async Task InvokeASAMConversionAsync(TreatmentEpisodeDataSet treatmentEpisodeDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM ASAM file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -1986,23 +1860,26 @@ namespace PAM2FASAMS
                 {
                     var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
                     var clientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
-                    var client = dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    var client = await dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
                     string evalDate = fValidations.ValidateFASAMSDate((pamRow.Where(r => r.Name == "EvalDate").Single().Value));
+                    var type = pValidations.ValidateEvalPurpose(FileType.ASAM, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
+                    TreatmentEpisode treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                     if (IsDelete)
                     {
 
                     }
                     else
                     {
-                        var type = pValidations.ValidateEvalPurpose(FileType.ASAM, (pamRow.Where(r => r.Name == "Purpose").Single().Value));
+                        
                         string recommendedLvl = "todo"; //FASAMSValidations.ValidateEvalToolRLvl(FileType.ASAM,pamRow);
                         string actualLvl = "todo"; //FASAMSValidations.ValidateEvalToolALvl(FileType.ASAM, pamRow);
                         switch (type)
                         {
                             case PAMValidations.UpdateType.Admission:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
+                                    treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, PAMValidations.UpdateType.Update, evalDate, client.SourceRecordIdentifier, fedTaxId);
+                                    admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
                                     if (evaluation == null || (evaluation.RecommendedLevelCode != recommendedLvl || evaluation.ActualLevelCode != actualLvl))
                                     {
@@ -2021,37 +1898,10 @@ namespace PAM2FASAMS
                                         };
                                         admission.Evaluations.Add(newEvaluation);
                                     }
-                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
                                     break;
                                 }
                             case PAMValidations.UpdateType.Update:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
                                     Evaluation evaluation = admission.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
                                     var score = fValidations.ValidateEvalToolScore(EvaluationToolTypes.ASAM, pamRow);
                                     if (evaluation == null || (evaluation.RecommendedLevelCode != recommendedLvl || evaluation.ActualLevelCode != actualLvl))
@@ -2071,38 +1921,11 @@ namespace PAM2FASAMS
                                         };
                                         admission.Evaluations.Add(newEvaluation);
                                     }
-                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
                                     break;
                                 }
                             case PAMValidations.UpdateType.Discharge:
                                 {
-                                    TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(treatmentEpisodeDataSet, type, evalDate, client.SourceRecordIdentifier, fedTaxId);
-                                    Admission admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, type, evalDate);
-                                    Discharge discharge = dt.OpportuniticlyLoadDischarge(admission, evalDate);
+                                    Discharge discharge = await dt.OpportuniticlyLoadDischarge(admission, evalDate);
                                     Evaluation evaluation = discharge.Evaluations.Where(e => e.EvaluationDate == evalDate && e.ToolCode == toolCode).SingleOrDefault();
                                     if (evaluation == null || (evaluation.RecommendedLevelCode != recommendedLvl || evaluation.ActualLevelCode != actualLvl))
                                     {
@@ -2122,34 +1945,34 @@ namespace PAM2FASAMS
                                         discharge.Evaluations.Add(newEvaluation);
                                     }
                                     fValidations.ProcessDischarge(admission, discharge);
-                                    fValidations.ProcessAdmission(treatmentEpisode, admission);
-                                    try
-                                    {
-                                        dt.UpsertTreatmentSession(treatmentEpisode);
-                                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
-                                        {
-                                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                                        }
-                                    }
-                                    catch (DbEntityValidationException ex)
-                                    {
-                                        // Retrieve the error messages as a list of strings.
-                                        var errorMessages = ex.EntityValidationErrors
-                                                .SelectMany(x => x.ValidationErrors)
-                                                .Select(x => x.ErrorMessage);
-
-                                        // Join the list to a single string.
-                                        var fullErrorMessage = string.Join(";", errorMessages);
-
-                                        // Combine the original exception message with the new one.
-                                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
-
-                                        // Throw a new DbEntityValidationException with the improved exception message.
-                                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
-                                    }
                                     break;
                                 }
                         }
+                    }
+                    fValidations.ProcessAdmission(treatmentEpisode, admission);
+                    try
+                    {
+                        await dt.UpsertTreatmentSession(treatmentEpisode);
+                        if (!treatmentEpisodeDataSet.TreatmentEpisodes.Any(t => t.SourceRecordIdentifier == treatmentEpisode.SourceRecordIdentifier))
+                        {
+                            treatmentEpisodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
+                        }
+                    }
+                    catch (DbEntityValidationException ex)
+                    {
+                        // Retrieve the error messages as a list of strings.
+                        var errorMessages = ex.EntityValidationErrors
+                                .SelectMany(x => x.ValidationErrors)
+                                .Select(x => x.ErrorMessage);
+
+                        // Join the list to a single string.
+                        var fullErrorMessage = string.Join(";", errorMessages);
+
+                        // Combine the original exception message with the new one.
+                        var exceptionMessage = string.Concat(ex.Message, "The validation errors are: ", fullErrorMessage);
+
+                        // Throw a new DbEntityValidationException with the improved exception message.
+                        throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
                     }
                 }
                 catch (Exception ex)
@@ -2165,15 +1988,15 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed Conversion of PAM ASAM file.");
         }
-        public void InvokeServConversion(string inputFile, string outputFile)
+        public async Task InvokeServConversionAsync(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SERV file..");
             ServiceEvents serviceEventsDataSet = new ServiceEvents { serviceEvents = new List<ServiceEvent>() };
-            InvokeServConversion(serviceEventsDataSet, inputFile);
+            await InvokeServConversionAsync(serviceEventsDataSet, inputFile);
             WriteXml(serviceEventsDataSet, outputFile, "ServiceEventDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM SERV file.");
         }
-        public void InvokeServConversion(ServiceEvents serviceEventsDataSet, string inputFile)
+        public async Task InvokeServConversionAsync(ServiceEvents serviceEventsDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM SERV file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -2209,36 +2032,46 @@ namespace PAM2FASAMS
                     var fedTaxId = (pamRow.Where(r => r.Name == "ProvId").Single().Value);
                     var clientId = fValidations.ValidateClientIdentifier((pamRow.Where(r => r.Name == "SSN").Single().Value));
                     var recordDate = fValidations.ValidateFASAMSDate(pamRow.Where(r => r.Name == "ServDate").Single().Value);
-                    client = dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
-                    var treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(PAMValidations.TreatmentEpisodeType.Admission, recordDate, client.SourceRecordIdentifier, fedTaxId);
-                    var admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate);
-                    
+                    client = await dt.OpportuniticlyLoadProviderClient(clientId, fedTaxId);
+                    TreatmentEpisode treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(PAMValidations.TreatmentEpisodeType.Admission, recordDate, client.SourceRecordIdentifier, fedTaxId);
+                    string treatmentSetting = fValidations.ValidateTreatmentSettingCodeFromCoveredServiceCode((pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value).Trim());
+                    var setting = pamRow.Where(r => r.Name == "Setting").Single().Value;
+                    Admission admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate, treatmentSetting);
                     if (IsDelete)
                     {
-
+                        string progCode = fValidations.ValidateAdmissionProgramCode((pamRow.Where(r => r.Name == "ProgType").Single().Value), client.BirthDate, recordDate); //this may change depending on feedback from ME
+                        string covrdSvc = (pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value);
+                        ServiceEvent serviceEventDel = new ServiceEvent
+                        {
+                            EpisodeSourceRecordIdentifier = treatmentEpisode.SourceRecordIdentifier,
+                            AdmissionSourceRecordIdentifier = admission.SourceRecordIdentifier,
+                            TreatmentSettingCode = treatmentSetting,
+                            ProgramAreaCode = progCode,
+                            CoveredServiceCode = covrdSvc,
+                            HcpcsProcedureCode = (pamRow.Where(r => r.Name == "ProcCode").Single().Value),
+                            ServiceDate = recordDate,
+                            StartTime = (pamRow.Where(r => r.Name == "BeginTime").Single().Value).Trim(),
+                            ServiceCountyAreaCode = (pamRow.Where(r => r.Name == "CntyServ").Single().Value)
+                        };
                     }
                     else
                     {
-                       
                         string contNum = null; //this may change depending on feedback from ME
                         string subcontNum = (pamRow.Where(r => r.Name == "ContNum1").Single().Value); //this may change depending on feedback from ME
-                        string treatmentSetting = fValidations.ValidateTreatmentSettingCodeFromCoveredServiceCode((pamRow.Where(r => r.Name == "CovrdSvcs").Single().Value).Trim());
-                        admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate, treatmentSetting);
-                        var setting = pamRow.Where(r => r.Name == "Setting").Single().Value;
-                        var contract = dt.OpportuniticlyLoadSubcontract(subcontNum, recordDate, fedTaxId);
+                        var contract = await dt.OpportuniticlyLoadSubcontract(subcontNum, recordDate, fedTaxId);
                         if(admission.TreatmentSettingCode == "0")
                         {
-                            SetInitialTreatmentLevel(treatmentEpisode, admission, treatmentSetting);
+                            await SetInitialTreatmentLevel(treatmentEpisode, admission, treatmentSetting);
                         }
                         if(admission.TreatmentSettingCode != treatmentSetting && admission.TreatmentSettingCode != "0")
                         {
                             string siteId = (pamRow.Where(r => r.Name == "SiteId").Single().Value);
-                            TransferTreatmentLevel(treatmentEpisode,admission,contract,treatmentSetting,recordDate, siteId);
-                            admission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate, treatmentSetting);
+                            await TransferTreatmentLevel(treatmentEpisode, admission, contract, treatmentSetting, recordDate, siteId);
+                            admission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, recordDate, treatmentSetting);
                         }
 
                         var newService = fValidations.CreateServiceEvent(PAMValidations.ServiceEventType.Service, pamRow,recordDate,contract,treatmentEpisode,admission,client);
-                        service = dt.OpportuniticlyLoadServiceEvent(PAMValidations.ServiceEventType.Service, newService);
+                        service = await dt.OpportuniticlyLoadServiceEvent(PAMValidations.ServiceEventType.Service, newService);
                         if (service.SourceRecordIdentifier == null)
                         {
                             service = newService;
@@ -2247,7 +2080,7 @@ namespace PAM2FASAMS
                     }
                     try
                     {
-                        dt.UpsertServiceEvent(service);
+                        await dt.UpsertServiceEvent(service);
                         serviceEventsDataSet.serviceEvents.Add(service);
                     }
                     catch (DbEntityValidationException ex)
@@ -2280,15 +2113,15 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed Conversion of PAM SERV file.");
         }
-        public void InvokeEvntConversion(string inputFile, string outputFile)
+        public async Task InvokeEvntConversionAsync(string inputFile, string outputFile)
         {
             Console.WriteLine("Starting Conversion of PAM EVNT file..");           
             ServiceEvents serviceEventsDataSet = new ServiceEvents { serviceEvents = new List<ServiceEvent>() };
-            InvokeEvntConversion(serviceEventsDataSet, inputFile);
+            await InvokeEvntConversionAsync(serviceEventsDataSet, inputFile);
             WriteXml(serviceEventsDataSet, outputFile, "ServiceEventDataSet", Path.GetDirectoryName(inputFile));
             Console.WriteLine("Completed Conversion of PAM EVNT file.");
         }
-        public void InvokeEvntConversion(ServiceEvents serviceEventsDataSet, string inputFile)
+        public async Task InvokeEvntConversionAsync(ServiceEvents serviceEventsDataSet, string inputFile)
         {
             Console.WriteLine("Starting Conversion of PAM EVNT file..");
             bool IsDelete = string.Equals(Path.GetExtension(inputFile), ".del", StringComparison.OrdinalIgnoreCase);
@@ -2325,9 +2158,9 @@ namespace PAM2FASAMS
                     {
                         string contNum = null; //this may change depending on feedback from ME
                         string subcontNum = (pamRow.Where(r => r.Name == "ContNum1").Single().Value); //this may change depending on feedback from ME
-                        var contract = dt.OpportuniticlyLoadSubcontract(subcontNum, recordDate, fedTaxId);
+                        var contract = await dt.OpportuniticlyLoadSubcontract(subcontNum, recordDate, fedTaxId);
                         var newService = fValidations.CreateServiceEvent(PAMValidations.ServiceEventType.Event, pamRow, recordDate,contract);
-                        service = dt.OpportuniticlyLoadServiceEvent(PAMValidations.ServiceEventType.Event, newService);
+                        service = await dt.OpportuniticlyLoadServiceEvent(PAMValidations.ServiceEventType.Event, newService);
                         if(service.SourceRecordIdentifier == null)
                         {
                             service = newService;
@@ -2335,7 +2168,7 @@ namespace PAM2FASAMS
                     }
                     try
                     {
-                        dt.UpsertServiceEvent(service);
+                        await dt.UpsertServiceEvent(service);
                         serviceEventsDataSet.serviceEvents.Add(service);
                     }
                     catch (DbEntityValidationException ex)
@@ -2368,10 +2201,64 @@ namespace PAM2FASAMS
             }
             Console.WriteLine("Completed Conversion of PAM EVNT file.");
         }
-        
+
         #endregion
         #region internal functions
-        private void TransferTreatmentLevel(TreatmentEpisode episode, Admission admission, Subcontract contract, string newLevel, string recordDate, string siteId)
+        private async Task ProcessInputFiles(IEnumerable<InputFile> inputFiles, Options options, ProviderClients clientDataSet, 
+            TreatmentEpisodeDataSet treatmentEpisodeDataSet, ServiceEvents serviceEventsDataSet)
+        {
+            foreach (InputFile file in inputFiles)
+            {
+                options.InputFile = options.Directory + '/' + file.FileName;
+                Console.WriteLine("File: {0}, Type: {1}", file.FileName, file.RecordType);
+                if (!File.Exists(options.InputFile))
+                {
+                    Console.WriteLine("File: {0} not found, skipping file.", file.FileName);
+                    continue;
+                }
+                switch (file.RecordType)
+                {
+                    case "IDUP":
+                        break;
+                    case "SSN":
+                        await InvokeSSNConversionAsync(clientDataSet, options.InputFile);
+                        break;
+                    case "DEMO":
+                        await InvokeDemoConversionAsync(clientDataSet, options.InputFile);
+                        break;
+                    case "SAPERFA":
+                        await InvokeSAAdmitConversionAsync(treatmentEpisodeDataSet, options.InputFile);
+                        break;
+                    case "SAPERFD":
+                        await InvokeSADischargeConversionAsync(treatmentEpisodeDataSet, options.InputFile);
+                        break;
+                    case "SADT":
+                        break;
+                    case "PERF":
+                        await InvokePerfConversionAsync(treatmentEpisodeDataSet, options.InputFile);
+                        break;
+                    case "CFARS":
+                        await InvokeCFARSConversionAsync(treatmentEpisodeDataSet, options.InputFile);
+                        break;
+                    case "FARS":
+                        await InvokeFARSConversionAsync(treatmentEpisodeDataSet, options.InputFile);
+                        break;
+                    case "ASAM":
+                        break;
+                    case "SERV":
+                        await InvokeServConversionAsync(serviceEventsDataSet, options.InputFile);
+                        break;
+                    case "EVNT":
+                        await InvokeEvntConversionAsync(serviceEventsDataSet, options.InputFile);
+                        break;
+                    case "SANDR":
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        private async Task TransferTreatmentLevel(TreatmentEpisode episode, Admission admission, Subcontract contract, string newLevel, string recordDate, string siteId)
         {
             string existingLevel = admission.TreatmentSettingCode;
             Console.WriteLine("Automatic Transfer Invoked: {0} => {1}",existingLevel, newLevel);
@@ -2386,7 +2273,7 @@ namespace PAM2FASAMS
             fValidations.ProcessAdmission(episode, transferAdmission);
             try
             {
-                dt.UpsertTreatmentSession(episode);
+                await dt.UpsertTreatmentSession(episode);
             }
             catch (DbEntityValidationException ex)
             {
@@ -2405,7 +2292,7 @@ namespace PAM2FASAMS
                 throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
             }
         }
-        private void SetInitialTreatmentLevel(TreatmentEpisode episode, Admission admission, string newLevel)
+        private async Task SetInitialTreatmentLevel(TreatmentEpisode episode, Admission admission, string newLevel)
         {
             string existingLevel = admission.TreatmentSettingCode;
             var fValidations = new FASAMSValidations();
@@ -2414,7 +2301,7 @@ namespace PAM2FASAMS
             fValidations.ProcessAdmission(episode, admission);
             try
             {
-                dt.UpsertTreatmentSession(episode);
+                await dt.UpsertTreatmentSession(episode);
             }
             catch (DbEntityValidationException ex)
             {
@@ -2433,39 +2320,39 @@ namespace PAM2FASAMS
                 throw new DbEntityValidationException(exceptionMessage, ex.EntityValidationErrors);
             }
         }
-        private void InvokeChronologicalReorganizationValidation()
+        private async Task InvokeChronologicalReorganizationValidation()
         {
             Console.WriteLine("Starting Chronological Reorganization Validation Process");
             var dt = new DataTools();
             List<JobLog> pendingJobs = new List<JobLog>();
-            pendingJobs = dt.LoadPendingJobs();
+            pendingJobs = await dt.LoadPendingJobs();
 
             foreach(var job in pendingJobs.Where(j => j.RecordType == "PM").OrderBy(j=> j.CreatedAt))
             {
                 try
                 {
-                    PerformanceOutcomeMeasure perf = dt.OpportuniticlyLoadPerformanceOutcomeMeasure(job.SourceRecordId);
+                    PerformanceOutcomeMeasure perf = await dt.OpportuniticlyLoadPerformanceOutcomeMeasure(job.SourceRecordId);
                     Admission currentAdmission;
                     Admission checkedAdmission;
                     TreatmentEpisode treatmentEpisode;
                     if (perf.Admission_SourceRecordIdentifier != null)
                     {
-                        currentAdmission = dt.OpportuniticlyLoadAdmission(perf.Admission_SourceRecordIdentifier);
+                        currentAdmission = await dt.OpportuniticlyLoadAdmission(perf.Admission_SourceRecordIdentifier);
                     }
                     else
                     {
-                        Discharge discharge = dt.OpportuniticlyLoadDischarge(perf);
-                        currentAdmission = dt.OpportuniticlyLoadAdmission(discharge);
+                        Discharge discharge = await dt.OpportuniticlyLoadDischarge(perf);
+                        currentAdmission = await dt.OpportuniticlyLoadAdmission(discharge);
                     }
-                    treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(currentAdmission.TreatmentSourceId);
-                    checkedAdmission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, perf.PerformanceOutcomeMeasureDate);
+                    treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(currentAdmission.TreatmentSourceId);
+                    checkedAdmission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, perf.PerformanceOutcomeMeasureDate);
                     if (currentAdmission.SourceRecordIdentifier != checkedAdmission.SourceRecordIdentifier)
                     {
                         perf.Admission_SourceRecordIdentifier = checkedAdmission.SourceRecordIdentifier;
                         Console.WriteLine("Updating Perf Id:{0} from Admision Id:{1} to Id:{2}",perf.SourceRecordIdentifier, currentAdmission.SourceRecordIdentifier,checkedAdmission.SourceRecordIdentifier);
                         try
                         {
-                            dt.UpsertPerformanceOutcomeMeasure(perf);
+                            await dt.UpsertPerformanceOutcomeMeasure(perf);
                         }
                         catch (DbEntityValidationException ex)
                         {
@@ -2494,28 +2381,28 @@ namespace PAM2FASAMS
             {
                 try
                 {
-                    Evaluation evaluation = dt.OpportuniticlyLoadEvaluation(job.SourceRecordId);
+                    Evaluation evaluation = await dt.OpportuniticlyLoadEvaluation(job.SourceRecordId);
                     Admission currentAdmission;
                     Admission checkedAdmission;
                     TreatmentEpisode treatmentEpisode;
                     if (evaluation.Admission_SourceRecordIdentifier != null)
                     {
-                        currentAdmission = dt.OpportuniticlyLoadAdmission(evaluation.Admission_SourceRecordIdentifier);
+                        currentAdmission = await dt.OpportuniticlyLoadAdmission(evaluation.Admission_SourceRecordIdentifier);
                     }
                     else
                     {
-                        Discharge discharge = dt.OpportuniticlyLoadDischarge(evaluation.Discharge_SourceRecordIdentifier);
-                        currentAdmission = dt.OpportuniticlyLoadAdmission(discharge);
+                        Discharge discharge = await dt.OpportuniticlyLoadDischarge(evaluation.Discharge_SourceRecordIdentifier);
+                        currentAdmission = await dt.OpportuniticlyLoadAdmission(discharge);
                     }
-                    treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(currentAdmission.TreatmentSourceId);
-                    checkedAdmission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, evaluation.EvaluationDate);
+                    treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(currentAdmission.TreatmentSourceId);
+                    checkedAdmission = await dt.OpportuniticlyLoadAdmission(treatmentEpisode, evaluation.EvaluationDate);
                     if (currentAdmission.SourceRecordIdentifier != checkedAdmission.SourceRecordIdentifier)
                     {
                         evaluation.Admission_SourceRecordIdentifier = checkedAdmission.SourceRecordIdentifier;
                         Console.WriteLine("Updating Eval Id:{0} from Admision Id:{1} to Id:{2}", evaluation.SourceRecordIdentifier, currentAdmission.SourceRecordIdentifier, checkedAdmission.SourceRecordIdentifier);
                         try
                         {
-                            dt.UpsertEvaluation(evaluation);
+                            await dt.UpsertEvaluation(evaluation);
                         }
                         catch (DbEntityValidationException ex)
                         {
@@ -2544,20 +2431,20 @@ namespace PAM2FASAMS
             {
                 try
                 {
-                    Diagnosis diagnosis = dt.OpportuniticlyLoadDiagnosis(job.SourceRecordId);
+                    Diagnosis diagnosis = await dt.OpportuniticlyLoadDiagnosis(job.SourceRecordId);
                     Admission currentAdmission;
                     Admission checkedAdmission;
                     TreatmentEpisode treatmentEpisode;
                     if (diagnosis.Admission_SourceRecordIdentifier != null)
                     {
-                        currentAdmission = dt.OpportuniticlyLoadAdmission(diagnosis.Admission_SourceRecordIdentifier);
+                        currentAdmission = await dt.OpportuniticlyLoadAdmission(diagnosis.Admission_SourceRecordIdentifier);
                     }
                     else
                     {
-                        Discharge discharge = dt.OpportuniticlyLoadDischarge(diagnosis.Discharge_SourceRecordIdentifier);
-                        currentAdmission = dt.OpportuniticlyLoadAdmission(discharge);
+                        Discharge discharge = await dt.OpportuniticlyLoadDischarge(diagnosis.Discharge_SourceRecordIdentifier);
+                        currentAdmission = await dt.OpportuniticlyLoadAdmission(discharge);
                     }
-                    treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(currentAdmission.TreatmentSourceId);
+                    treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(currentAdmission.TreatmentSourceId);
                     //checkedAdmission = dt.OpportuniticlyLoadAdmission(treatmentEpisode, diagnosis.EvaluationDate);
                     //if (currentAdmission.SourceRecordIdentifier != checkedAdmission.SourceRecordIdentifier)
                     //{
@@ -2601,11 +2488,12 @@ namespace PAM2FASAMS
 
             Console.WriteLine("Completed Chronological Reorganization Validation Process");
         }
-        private void CreateOutputDataSet(object dataStructure, DataSetTypes dataSet)
+        private async Task CreateOutputDataSet(object dataStructure, DataSetTypes dataSet)
         {
             var dt = new DataTools();
+            var fValidations = new FASAMSValidations();
             List<JobLog> pendingJobs = new List<JobLog>();
-            pendingJobs = dt.LoadPendingJobs();
+            pendingJobs = await dt.LoadPendingJobs();
             switch (dataSet)
             {
                 case DataSetTypes.Client:
@@ -2613,7 +2501,7 @@ namespace PAM2FASAMS
                         ProviderClients clientDataSet = (ProviderClients)dataStructure;
                         foreach (var job in pendingJobs.Where(j => j.RecordType == "CL").OrderBy(j => j.CreatedAt))
                         {
-                            ProviderClient client = dt.OpportuniticlyLoadProviderClient(job.SourceRecordId);
+                            ProviderClient client = await dt.OpportuniticlyLoadProviderClient(job.SourceRecordId);
                             switch (job.Status)
                             {
                                 case "Update":
@@ -2645,7 +2533,7 @@ namespace PAM2FASAMS
                         TreatmentEpisodeDataSet episodeDataSet = (TreatmentEpisodeDataSet)dataStructure;
                         foreach (var job in pendingJobs.Where(j => j.RecordType == "TE").OrderBy(j => j.CreatedAt))
                         {
-                            TreatmentEpisode treatmentEpisode = dt.OpportuniticlyLoadTreatmentSession(job.SourceRecordId);
+                            TreatmentEpisode treatmentEpisode = await dt.OpportuniticlyLoadTreatmentSession(job.SourceRecordId);
                             switch (job.Status)
                             {
                                 case "Update":
@@ -2670,34 +2558,99 @@ namespace PAM2FASAMS
                                     break;
                             }
                         }
-                        //foreach (var job in pendingJobs.Where(j => j.RecordType == "AD").OrderBy(j => j.CreatedAt))
-                        //{
-                        //    Admission admission = dt.OpportuniticlyLoadAdmission(job.SourceRecordId);
-                        //    switch (job.Status)
-                        //    {
-                        //        case "Update":
-                        //            {
-                        //                episodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                        //            }
-                        //            break;
-                        //        case "Delete":
-                        //            {
+                        foreach (var job in pendingJobs.Where(j => j.RecordType == "AD").OrderBy(j => j.CreatedAt))
+                        {
+                            Admission admission = await dt.OpportuniticlyLoadAdmission(job.SourceRecordId);
+                            TreatmentEpisode treatmentEpisode = episodeDataSet.TreatmentEpisodes.Where(e => e.SourceRecordIdentifier == admission.TreatmentSourceId 
+                            && e.FederalTaxIdentifier == admission.FederalTaxIdentifier).SingleOrDefault();
+                            switch (job.Status)
+                            {
+                                case "Update":
+                                    {
+                                        fValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    }
+                                    break;
+                                case "Delete":
+                                    {
 
-                        //            }
-                        //            break;
-                        //        case "UnDelete":
-                        //            {
+                                    }
+                                    break;
+                                case "UnDelete":
+                                    {
 
-                        //            }
-                        //            break;
-                        //        default:
-                        //            {
-                        //                episodeDataSet.TreatmentEpisodes.Add(treatmentEpisode);
-                        //            }
-                        //            break;
-                        //    }
-                        //}
+                                    }
+                                    break;
+                                default:
+                                    {
+                                        fValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    }
+                                    break;
+                            }
+                        }
+                        foreach (var job in pendingJobs.Where(j => j.RecordType == "DC").OrderBy(j => j.CreatedAt))
+                        {
+                            Discharge discharge = await dt.OpportuniticlyLoadDischarge(job.SourceRecordId);
+                            Admission dbadmission = await dt.OpportuniticlyLoadAdmission(discharge);
+                            TreatmentEpisode treatmentEpisode = episodeDataSet.TreatmentEpisodes.Where(e => e.SourceRecordIdentifier == dbadmission.TreatmentSourceId
+                            && e.FederalTaxIdentifier == dbadmission.FederalTaxIdentifier).SingleOrDefault();
+                            Admission admission = treatmentEpisode.Admissions.Where(a => a.SourceRecordIdentifier == dbadmission.SourceRecordIdentifier).SingleOrDefault();
+                            switch (job.Status)
+                            {
+                                case "Update":
+                                    {
+                                        fValidations.ProcessDischarge(admission, discharge);
+                                        fValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    }
+                                    break;
+                                case "Delete":
+                                    {
 
+                                    }
+                                    break;
+                                case "UnDelete":
+                                    {
+
+                                    }
+                                    break;
+                                default:
+                                    {
+                                        fValidations.ProcessDischarge(admission, discharge);
+                                        fValidations.ProcessAdmission(treatmentEpisode, admission);
+                                    }
+                                    break;
+                            }
+                        }
+
+
+                        foreach (var job in pendingJobs.Where(j => j.RecordType == "ID").OrderBy(j => j.CreatedAt))
+                        {
+                            ImmediateDischarge immediateDischarge = await dt.OpportuniticlyLoadImmediateDischarge(job.SourceRecordId);
+                            TreatmentEpisode treatmentEpisode = episodeDataSet.TreatmentEpisodes.Where(e => e.SourceRecordIdentifier == immediateDischarge.TreatmentSourceId
+                            && e.FederalTaxIdentifier == immediateDischarge.FederalTaxIdentifier).SingleOrDefault();
+                            switch (job.Status)
+                            {
+                                case "Update":
+                                    {
+                                        fValidations.ProcessImmediateDischarge(treatmentEpisode, immediateDischarge);
+                                    }
+                                    break;
+                                case "Delete":
+                                    {
+
+                                    }
+                                    break;
+                                case "UnDelete":
+                                    {
+
+                                    }
+                                    break;
+                                default:
+                                    {
+                                        fValidations.ProcessImmediateDischarge(treatmentEpisode, immediateDischarge);
+                                    }
+                                    break;
+                            }
+                        }
                     }
                     break;
                 case DataSetTypes.ServiceEvent:
@@ -2705,7 +2658,7 @@ namespace PAM2FASAMS
                         ServiceEvents serviceEventsDataSet = (ServiceEvents)dataStructure;
                         foreach (var job in pendingJobs.Where(j => j.RecordType == "SE").OrderBy(j => j.CreatedAt))
                         {
-                            ServiceEvent serviceEvent = dt.OpportuniticlyLoadServiceEvent(job.SourceRecordId);
+                            ServiceEvent serviceEvent = await dt.OpportuniticlyLoadServiceEvent(job.SourceRecordId);
                             switch (job.Status)
                             {
                                 case "Update":

@@ -5,14 +5,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace PAM2FASAMS.OutputFormats
 {
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
+    [XmlType(AnonymousType = true)]
+    [XmlRoot(Namespace = "", ElementName = "TreatmentEpisodeDataSet", IsNullable = false)]
     public partial class TreatmentEpisodeDataSet
     {
         [System.Xml.Serialization.XmlArrayItemAttribute("TreatmentEpisode", IsNullable = false)]
@@ -171,6 +172,18 @@ namespace PAM2FASAMS.OutputFormats
         public string Admission_SourceRecordIdentifier { get; set; }
         [System.Xml.Serialization.XmlIgnoreAttribute()]
         public virtual Admission Admission { get; set; }
+        [XmlIgnore()]
+        public DateTime InternalPerformanceOutcomeMeasureDate
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(PerformanceOutcomeMeasureDate))
+                {
+                    return DateTime.Parse(PerformanceOutcomeMeasureDate);
+                }
+                return DateTime.Now;
+            }
+        }
     }
 
     [Table(name: "Evaluations")]
@@ -520,210 +533,58 @@ namespace PAM2FASAMS.OutputFormats
     [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
     public partial class Discharge
     {
-        private string sourceRecordIdentifierField;
-
-        private string staffEducationLevelCodeField;
-
-        private string staffIdentifierField;
-
-        private string typeCodeField;
-
-        private string dischargeDateField;
-
-        private string lastContactDateField;
-
-        private string dischargeReasonCodeField;
-
-        private string dischargeDestinationCodeField;
-
-        private string birthOutcomeCodeField;
-
-        private string drugFreeAtDeliveryCodeField;
-
-        private PerformanceOutcomeMeasure performanceOutcomeMeasuresField;
-
-        private List<Evaluation> evaluationsField;
-
-        private List<Diagnosis> diagnosesField;
 
         /// <remarks/>
         [Key]
         [MaxLength(100)]
-        public string SourceRecordIdentifier
-        {
-            get
-            {
-                return this.sourceRecordIdentifierField;
-            }
-            set
-            {
-                this.sourceRecordIdentifierField = value;
-            }
-        }
+        public string SourceRecordIdentifier { get; set; }
 
         /// <remarks/>
-        public string StaffEducationLevelCode
-        {
-            get
-            {
-                return this.staffEducationLevelCodeField;
-            }
-            set
-            {
-                this.staffEducationLevelCodeField = value;
-            }
-        }
+        public string StaffEducationLevelCode { get; set; }
 
         /// <remarks/>
         [MaxLength(100)]
-        public string StaffIdentifier
-        {
-            get
-            {
-                return this.staffIdentifierField;
-            }
-            set
-            {
-                this.staffIdentifierField = value;
-            }
-        }
+        public string StaffIdentifier { get; set; }
 
         /// <remarks/>
         [Required]
-        public string TypeCode
-        {
-            get
-            {
-                return this.typeCodeField;
-            }
-            set
-            {
-                this.typeCodeField = value;
-            }
-        }
+        public string TypeCode { get; set; }
 
         /// <remarks/>
         [Required]
-        public string DischargeDate
-        {
-            get
-            {
-                return this.dischargeDateField;
-            }
-            set
-            {
-                this.dischargeDateField = value;
-            }
-        }
+        public string DischargeDate { get; set; }
 
         /// <remarks/>
         [Required]
-        public string LastContactDate
-        {
-            get
-            {
-                return this.lastContactDateField;
-            }
-            set
-            {
-                this.lastContactDateField = value;
-            }
-        }
+        public string LastContactDate { get; set; }
 
         /// <remarks/>
         [Required]
-        public string DischargeReasonCode
-        {
-            get
-            {
-                return this.dischargeReasonCodeField;
-            }
-            set
-            {
-                this.dischargeReasonCodeField = value;
-            }
-        }
+        public string DischargeReasonCode { get; set; }
 
         /// <remarks/>
-        public string DischargeDestinationCode
-        {
-            get
-            {
-                return this.dischargeDestinationCodeField;
-            }
-            set
-            {
-                this.dischargeDestinationCodeField = value;
-            }
-        }
+        public string DischargeDestinationCode { get; set; }
 
         /// <remarks/>
-        public string BirthOutcomeCode
-        {
-            get
-            {
-                return this.birthOutcomeCodeField;
-            }
-            set
-            {
-                this.birthOutcomeCodeField = value;
-            }
-        }
+        public string BirthOutcomeCode { get; set; }
 
         /// <remarks/>
-        public string DrugFreeAtDeliveryCode
-        {
-            get
-            {
-                return this.drugFreeAtDeliveryCodeField;
-            }
-            set
-            {
-                this.drugFreeAtDeliveryCodeField = value;
-            }
-        }
+        public string DrugFreeAtDeliveryCode { get; set; }
 
         /// <remarks/>
-        public PerformanceOutcomeMeasure PerformanceOutcomeMeasures
-        {
-            get
-            {
-                return this.performanceOutcomeMeasuresField;
-            }
-            set
-            {
-                this.performanceOutcomeMeasuresField = value;
-            }
-        }
+        public PerformanceOutcomeMeasure PerformanceOutcomeMeasures { get; set; }
 
         /// <remarks/>
         [System.Xml.Serialization.XmlArrayItemAttribute("Evaluation", IsNullable = false)]
-        public List<Evaluation> Evaluations
-        {
-            get
-            {
-                return this.evaluationsField;
-            }
-            set
-            {
-                this.evaluationsField = value;
-            }
-        }
+        public List<Evaluation> Evaluations { get; set; }
 
         /// <remarks/>
-        public List<Diagnosis> Diagnoses
-        {
-            get
-            {
-                return this.diagnosesField;
-            }
-            set
-            {
-                this.diagnosesField = value;
-            }
-        }
+        public List<Diagnosis> Diagnoses { get; set; }
 
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlAttribute()]
+        public string action { get; set; }
+
+        [XmlIgnore()]
         public DateTime InternalDischargeDate
         {
             get

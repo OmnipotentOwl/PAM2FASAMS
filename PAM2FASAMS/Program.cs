@@ -35,7 +35,7 @@ namespace PAM2FASAMS
                 options.Directory = Path.GetFullPath(options.Directory);
                 IEnumerable<InputFile> inputFiles = FileMapping.GetFileMapping().OrderBy(i => i.Sequence);
                 Console.WriteLine("Beginning batch execution");
-                converter.RunBatchJob(inputFiles, options);
+                converter.RunBatchJobAsync(inputFiles, options).Wait();
                 Console.WriteLine("Batch execution completed!");
             }
             else
@@ -45,22 +45,22 @@ namespace PAM2FASAMS
                     case FileType.IDUP:
                         break;
                     case FileType.SSN:
-                        converter.InvokeSSNConversion(options.InputFile, options.OutputFile);
+                        converter.InvokeSSNConversionAsync(options.InputFile, options.OutputFile).Wait();
                         break;
                     case FileType.DEMO:
-                        converter.InvokeDemoConversion(options.InputFile, options.OutputFile);
+                        converter.InvokeDemoConversionAsync(options.InputFile, options.OutputFile).Wait();
                         break;
                     case FileType.PERF:
-                        converter.InvokePerfConversion(options.InputFile, options.OutputFile);
+                        converter.InvokePerfConversionAsync(options.InputFile, options.OutputFile).Wait();
                         break;
                     case FileType.CFAR:
-                        converter.InvokeCFARSConversion(options.InputFile, options.OutputFile);
+                        converter.InvokeCFARSConversionAsync(options.InputFile, options.OutputFile).Wait();
                         break;
                     case FileType.SERV:
-                        converter.InvokeServConversion(options.InputFile, options.OutputFile);
+                        converter.InvokeServConversionAsync(options.InputFile, options.OutputFile).Wait();
                         break;
                     case FileType.EVNT:
-                        converter.InvokeEvntConversion(options.InputFile, options.OutputFile);
+                        converter.InvokeEvntConversionAsync(options.InputFile, options.OutputFile).Wait();
                         break;
                     default:
                         break;
@@ -88,10 +88,10 @@ namespace PAM2FASAMS
                     functions.ExecuteLoadDatabase(options);
                     break;
                 case AdminTask.DUMP_FILE:
-                    functions.ExecuteExportFile(options);
+                    functions.ExecuteExportFileAsync(options).Wait();
                     break;
                 case AdminTask.LOAD_FILE:
-                    functions.ExecuteLoadFile(options);
+                    functions.ExecuteLoadFileAsync(options).Wait();
                     break;
             }
             return 0;

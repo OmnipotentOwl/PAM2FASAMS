@@ -1,5 +1,6 @@
-﻿using PAM2FASAMS.OutputFormats;
-using PAM2FASAMS.Utilities;
+﻿using PAM2FASAMS.Models.FASAMS;
+using PAM2FASAMS.Models.Utils;
+using PAM2FASAMS.OutputFormats;
 using SQLite.CodeFirst;
 using System;
 using System.Collections.Generic;
@@ -33,7 +34,7 @@ namespace PAM2FASAMS.DataContext
             string DbType = ConfigurationManager.AppSettings["DBType"];
             if(DbType == "Local")
             {
-                var sqliteConnectionInitializer = new SqliteDropCreateDatabaseWhenModelChanges<fasams_db>(modelBuilder);              
+                var sqliteConnectionInitializer = new SqliteDbContextInitializer(modelBuilder);           
                 Database.SetInitializer(sqliteConnectionInitializer);
             }
             if(DbType == "SQLServer")
@@ -55,9 +56,9 @@ namespace PAM2FASAMS.DataContext
         public virtual DbSet<Diagnosis> Diagnoses { get; set; }
         public virtual DbSet<Discharge> Discharges { get; set; }
         public virtual DbSet<ServiceEvent> ServiceEvents { get; set; }
-        public virtual DbSet<ServiceEventCoveredServiceModifier> CoveredServiceModifiers { get; set; }
-        public virtual DbSet<ServiceEventHcpcsProcedureModifier> HcpcsProcedureModifiers { get; set; }
-        public virtual DbSet<ServiceEventExpenditureModifier> ExpenditureModifiers { get; set; }
+        public virtual DbSet<ServiceEventCoveredServiceModifier> ServiceEventCoveredServiceModifiers { get; set; }
+        public virtual DbSet<ServiceEventHcpcsProcedureModifier> ServiceEventHcpcsProcedureModifiers { get; set; }
+        public virtual DbSet<ServiceEventExpenditureModifier> ServiceEventExpenditureModifiers { get; set; }
         public virtual DbSet<Subcontract> Subcontracts { get; set; }
         public virtual DbSet<SubcontractService> SubcontractServices { get; set; }
         public virtual DbSet<SubcontractOutputMeasure> SubcontractOutputMeasures { get; set; }
@@ -65,6 +66,10 @@ namespace PAM2FASAMS.DataContext
 
         public virtual DbSet<JobLog> JobLogs { get; set; }
         public virtual DbSet<IdHistory> IdHistorys { get; set; }
+        public virtual DbSet<FundingSource> FundingSources { get; set; }
+        public virtual DbSet<CoveredService> CoveredServices { get; set; }
+        public virtual DbSet<ExpenditureOcaCode> ExpenditureOcaCodes { get; set; }
+        public virtual DbSet<ExpenditureCodeModifier> ExpenditureCodeModifiers { get; set; }
 
     }
 }

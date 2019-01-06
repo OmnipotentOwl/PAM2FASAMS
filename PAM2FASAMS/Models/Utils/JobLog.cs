@@ -6,8 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PAM2FASAMS.Utilities
+namespace PAM2FASAMS.Models.Utils
 {
+    [Table("JobLogs", Schema = "FLReporting_FASAMS")]
     public class JobLog
     {
         [Key,Column(Order = 0)]

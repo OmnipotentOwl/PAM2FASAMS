@@ -282,6 +282,44 @@ namespace PAM2FASAMS
                 discharge.Diagnoses.Add(diag);
             }
         }
+        public void ProcessEvaluation(Admission admission, Evaluation evaluation)
+        {
+            if (admission.Evaluations.Any(p => p.SourceRecordIdentifier == evaluation.SourceRecordIdentifier))
+            {
+                //same record so just replace it.
+                var existingEval = admission.Evaluations.Where(e => e.SourceRecordIdentifier == evaluation.SourceRecordIdentifier).FirstOrDefault();
+                int id = admission.Evaluations.IndexOf(existingEval);
+                evaluation.Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier;
+                admission.Evaluations[id] = evaluation;
+            }
+            if (admission.Evaluations.Any(p => p.InternalEvaluationDate == evaluation.InternalEvaluationDate && p.ToolCode == evaluation.ToolCode))
+            {
+                //complex data merge here.
+                return;
+            }
+            //last option
+            evaluation.Admission_SourceRecordIdentifier = admission.SourceRecordIdentifier;
+            admission.Evaluations.Add(evaluation);
+        }
+        public void ProcessEvaluation(Discharge discharge, Evaluation evaluation)
+        {
+            if (discharge.Evaluations.Any(p => p.SourceRecordIdentifier == evaluation.SourceRecordIdentifier))
+            {
+                //same record so just replace it.
+                var existingEval = discharge.Evaluations.Where(e => e.SourceRecordIdentifier == evaluation.SourceRecordIdentifier).FirstOrDefault();
+                int id = discharge.Evaluations.IndexOf(existingEval);
+                evaluation.Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier;
+                discharge.Evaluations[id] = evaluation;
+            }
+            if (discharge.Evaluations.Any(p => p.InternalEvaluationDate == evaluation.InternalEvaluationDate && p.ToolCode == evaluation.ToolCode))
+            {
+                //complex data merge here.
+                return;
+            }
+            //last option
+            evaluation.Discharge_SourceRecordIdentifier = discharge.SourceRecordIdentifier;
+            discharge.Evaluations.Add(evaluation);
+        }
         #endregion
         #region Creation Functions
         public ServiceEvent CreateServiceEvent(PAMValidations.ServiceEventType type, List<Field> pamRow, string recordDate, Subcontract contract, TreatmentEpisode treatmentEpisode, Admission admission, ProviderClient client)

@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace PAM2FASAMS.OutputFormats
 {
@@ -13,15 +14,15 @@ namespace PAM2FASAMS.OutputFormats
     {
 
     }
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
+    [XmlTypeAttribute(AnonymousType = true)]
+    [XmlRoot(Namespace = "", ElementName = "ProviderClients", IsNullable = false)]
     public partial class ProviderClients
     {
-        [System.Xml.Serialization.XmlElementAttribute("ProviderClient")]
+        [XmlElement("ProviderClient")]
         public List<ProviderClient> clients { get; set; }
     }
     [Table(name: "ProviderClient")]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [XmlType(AnonymousType = true)]
     public partial class ProviderClient
     {
         
@@ -60,13 +61,13 @@ namespace PAM2FASAMS.OutputFormats
         public List<ProviderClientIdentifier> ProviderClientIdentifiers { get; set; }
         public List<ProviderClientPhone> ProviderClientPhones { get; set; }
         public List<ProviderClientEmailAddress> ProviderClientEmailAddresses { get; set; }
-        [System.Xml.Serialization.XmlArrayItemAttribute("ProviderClientPhysicalAddress", IsNullable = false)]
+        [XmlArrayItem("ProviderClientPhysicalAddress", IsNullable = false)]
         public List<ProviderClientPhysicalAddress> ProviderClientPhysicalAddresses { get; set; }
 
-        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [XmlAttribute()]
         public string action { get; set; }
     }
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [XmlType(AnonymousType = true)]
     public partial class ProviderClientIdentifier
     {
         [Key, Column(Order = 1)]
@@ -74,20 +75,20 @@ namespace PAM2FASAMS.OutputFormats
         [Required]
         public string Identifier { get; set; }
 
-        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [XmlAttribute()]
         public string action { get; set; }
 
 
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         [Key,ForeignKey("Client"),Column(Order = 0)]
         public string ClientSourceId { get; set; }
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         [ForeignKey("Client"), Column(Order = 2)]
         public string FederalTaxIdentifier { get; set; }
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         public virtual ProviderClient Client { get; set; }
     }
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [XmlType(AnonymousType = true)]
     public partial class ProviderClientPhone
     {
         [Key, Column(Order = 1)]
@@ -95,37 +96,37 @@ namespace PAM2FASAMS.OutputFormats
         [Required]
         public string PhoneNumber { get; set; }
 
-        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [XmlAttribute()]
         public string action { get; set; }
 
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         [Key, ForeignKey("Client"), Column(Order = 0)]
         public string ClientSourceId { get; set; }
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         [ForeignKey("Client"), Column(Order = 2)]
         public string FederalTaxIdentifier { get; set; }
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         public virtual ProviderClient Client { get; set; }
     }
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [XmlType(AnonymousType = true)]
     public partial class ProviderClientEmailAddress
     {
         [Key, Column(Order = 1)]
         public string EmailAddress { get; set; }
 
-        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [XmlAttribute()]
         public string action { get; set; }
 
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         [Key, ForeignKey("Client"), Column(Order = 0)]
         public string ClientSourceId { get; set; }
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         [ForeignKey("Client"), Column(Order = 2)]
         public string FederalTaxIdentifier { get; set; }
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         public virtual ProviderClient Client { get; set; }
     }
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [XmlType(AnonymousType = true)]
     public partial class ProviderClientPhysicalAddress
     {
         [Key, Column(Order = 1)]
@@ -143,16 +144,16 @@ namespace PAM2FASAMS.OutputFormats
         [Required]
         public string CountyAreaCode { get; set; }
 
-        [System.Xml.Serialization.XmlAttributeAttribute()]
+        [XmlAttribute()]
         public string action { get; set; }
 
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         [Key, ForeignKey("Client"), Column(Order = 0)]
         public string ClientSourceId { get; set; }
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         [ForeignKey("Client"), Column(Order = 2)]
         public string FederalTaxIdentifier { get; set; }
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         public virtual ProviderClient Client { get; set; }
     }
 }

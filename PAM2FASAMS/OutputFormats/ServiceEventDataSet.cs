@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace PAM2FASAMS.OutputFormats
 {
@@ -13,21 +14,21 @@ namespace PAM2FASAMS.OutputFormats
     {
     }
 
-    [System.SerializableAttribute()]
+    [Serializable()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.ComponentModel.DesignerCategoryAttribute("code")]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
+    [DesignerCategory("code")]
+    [XmlType(AnonymousType = true)]
+    [XmlRoot(Namespace = "", ElementName = "ServiceEvents", IsNullable = false)]
     public partial class ServiceEvents
     {
         [System.Xml.Serialization.XmlElementAttribute("ServiceEvent")]
         public List<ServiceEvent> serviceEvents { get; set; }
     }
 
-    [System.SerializableAttribute()]
+    [Serializable()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.ComponentModel.DesignerCategoryAttribute("code")]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [DesignerCategory("code")]
+    [XmlType(AnonymousType = true)]
     public partial class ServiceEvent
     {
         [Key,Column(Order = 0)]
@@ -62,7 +63,7 @@ namespace PAM2FASAMS.OutputFormats
         public string FundCode { get; set; }
         [DefaultValue(0)]
         public decimal ActualPaymentRateAmount { get; set; }
-        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        [XmlIgnore()]
         [DefaultValue(false)]
         public bool ActualPaymentRateAmountSpecified { get; set; }
         public string InvoicedDate { get; set; }

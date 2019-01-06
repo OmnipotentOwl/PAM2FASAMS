@@ -1,46 +1,49 @@
-namespace PAM2FASAMS.Migrations
+ï»¿using PAM2FASAMS.Migrations;
+using PAM2FASAMS.Models.FASAMS;
+using SQLite.CodeFirst;
+using System;
+using System.Collections.Generic;
+using System.Data.Entity;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace PAM2FASAMS.DataContext
 {
-    using PAM2FASAMS.Models.FASAMS;
-    using System;
-    using System.Collections.Generic;
-    using System.Data.Entity;
-    using System.Data.Entity.Migrations;
-    using System.Linq;
-
-    internal sealed class Configuration : DbMigrationsConfiguration<DataContext.fasams_db>
+    public class SqliteDbContextInitializer : SqliteDropCreateDatabaseWhenModelChanges<fasams_db>
     {
-        public Configuration()
-        {
-            AutomaticMigrationsEnabled = true;
-        }
+        public SqliteDbContextInitializer(DbModelBuilder modelBuilder)
+        : base(modelBuilder) { }
 
-        protected override void Seed(DataContext.fasams_db context)
+        protected override void Seed(fasams_db context)
         {
-            //  This method will be called after migrating to the latest version.
-
-            //  You can use the DbSet<T>.AddOrUpdate() helper extension method 
-            //  to avoid creating duplicate seed data. E.g.
-            //
-            //    context.People.AddOrUpdate(
-            //      p => p.FullName,
-            //      new Person { FullName = "Andrew Peters" },
-            //      new Person { FullName = "Brice Lambson" },
-            //      new Person { FullName = "Rowan Miller" }
-            //    );
-            //
             #region FundingSources Seed
-            context.FundingSources.AddOrUpdate(x =>x.FundingSourceCode,
-                new FundingSource { FundingSourceCode = "2", FundingSourceName = "SAMH"},
+            List<FundingSource> fundingSources = new List<FundingSource>
+            {
+                new FundingSource { FundingSourceCode = "2", FundingSourceName = "SAMH" },
                 new FundingSource { FundingSourceCode = "3", FundingSourceName = "TANF" },
                 new FundingSource { FundingSourceCode = "5", FundingSourceName = "Local Match" },
                 new FundingSource { FundingSourceCode = "B", FundingSourceName = "Title XXI" }
-                );
+            };
+            context.FundingSources.AddRange(fundingSources);
             #endregion
             #region CoveredServices Seed
-            context.CoveredServices.AddOrUpdate(x => x.CoveredServiceCode,
-                new CoveredService { TreatmentSettingCode = "02", TreatmentSettingName = "Detoxification, 24-hour service, Free-Standing Residential"
-                , CoveredServiceCode = "24", CoveredServiceName = "Substance Abuse Inpatient Detoxification", AdultMH = false, AdultSA = true, ChildrenMH=false,
-                ChildrenSA = true, EventTypes = new List<EventType> { EventType.ClientSpecific }, PaymentType = PaymentType.Availibility, DefaultUnitOfMeasurement= DefaultUnitOfMeasurement.Day},
+            List<CoveredService> coveredServices = new List<CoveredService>
+            {
+                new CoveredService
+                {
+                    TreatmentSettingCode = "02",
+                    TreatmentSettingName = "Detoxification, 24-hour service, Free-Standing Residential",
+                    CoveredServiceCode = "24",
+                    CoveredServiceName = "Substance Abuse Inpatient Detoxification",
+                    AdultMH = false,
+                    AdultSA = true,
+                    ChildrenMH = false,
+                    ChildrenSA = true,
+                    EventTypes = new List<EventType> { EventType.ClientSpecific },
+                    PaymentType = PaymentType.Availibility,
+                    DefaultUnitOfMeasurement = DefaultUnitOfMeasurement.Day
+                },
                 new CoveredService
                 {
                     TreatmentSettingCode = "08",
@@ -198,7 +201,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "06",
-                    TreatmentSettingName = "Ambulatory – Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Intensive outpatient",
                     CoveredServiceCode = "04",
                     CoveredServiceName = "Crisis Support/Emergency",
                     AdultMH = true,
@@ -212,7 +215,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "06",
-                    TreatmentSettingName = "Ambulatory – Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Intensive outpatient",
                     CoveredServiceCode = "06",
                     CoveredServiceName = "Day Treatment",
                     AdultMH = true,
@@ -226,7 +229,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "06",
-                    TreatmentSettingName = "Ambulatory – Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Intensive outpatient",
                     CoveredServiceCode = "08",
                     CoveredServiceName = "In-Home and On-Site Community based care",
                     AdultMH = true,
@@ -240,7 +243,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "06",
-                    TreatmentSettingName = "Ambulatory – Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Intensive outpatient",
                     CoveredServiceCode = "10",
                     CoveredServiceName = "Intensive Case Management",
                     AdultMH = true,
@@ -254,7 +257,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "01",
                     CoveredServiceName = "Assessment",
                     AdultMH = true,
@@ -268,7 +271,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "02",
                     CoveredServiceName = "Case Management",
                     AdultMH = true,
@@ -282,7 +285,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "11",
                     CoveredServiceName = "Intervention (Individual)",
                     AdultMH = true,
@@ -296,7 +299,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "12",
                     CoveredServiceName = "Medical Services",
                     AdultMH = true,
@@ -310,7 +313,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "13",
                     CoveredServiceName = "Medication Assisted Treatment",
                     AdultMH = false,
@@ -324,7 +327,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "14",
                     CoveredServiceName = "Outpatient",
                     AdultMH = true,
@@ -338,7 +341,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "25",
                     CoveredServiceName = "Supportive Employment",
                     AdultMH = true,
@@ -352,7 +355,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "26",
                     CoveredServiceName = "Supported Housing/Living",
                     AdultMH = true,
@@ -366,7 +369,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "27",
                     CoveredServiceName = "Treatment Alternative for Safer Community",
                     AdultMH = false,
@@ -380,7 +383,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "29",
                     CoveredServiceName = "Aftercare",
                     AdultMH = true,
@@ -394,7 +397,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "40",
                     CoveredServiceName = "Mental Health Clubhouse Services",
                     AdultMH = true,
@@ -408,7 +411,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "44",
                     CoveredServiceName = "Comprehensive Community Service Team",
                     AdultMH = true,
@@ -422,7 +425,7 @@ namespace PAM2FASAMS.Migrations
                 new CoveredService
                 {
                     TreatmentSettingCode = "07",
-                    TreatmentSettingName = "Ambulatory – Non-Intensive outpatient",
+                    TreatmentSettingName = "Ambulatory â€“ Non-Intensive outpatient",
                     CoveredServiceCode = "46",
                     CoveredServiceName = "Recovery Support",
                     AdultMH = true,
@@ -573,22 +576,24 @@ namespace PAM2FASAMS.Migrations
                     PaymentType = PaymentType.Utilization,
                     DefaultUnitOfMeasurement = DefaultUnitOfMeasurement.NonDirectStaffMinute
                 }
-                );
+            };
+            context.CoveredServices.AddRange(coveredServices);
             context.SaveChanges();
             #endregion
             #region ExpenditureOcaCodes Seed
-            context.ExpenditureOcaCodes.AddOrUpdate(x => x.Code,
+            List<ExpenditureOcaCode> expenditureOcaCodes = new List<ExpenditureOcaCode>
+            {
                 new ExpenditureOcaCode
                 {
                     Code = "MH000",
                     Name = "ME Services & Supports Provider Activity - Mental Health",
                     EffectiveDate = DateTime.Parse("7/1/2015"),
-                    ValidCoveredServices = context.CoveredServices.Where(x=> new string[] {
+                    ValidCoveredServices = context.CoveredServices.Where(x => new string[] {
                         "01","02","03","04","05","06","07","08","09","10","11","12","14","15","18","19","20","21","22","25","26","28",
                         "29","30","36","37","38","39","40","44","46"
                     }.Contains(x.CoveredServiceCode)).ToList(),
-                    ValidProgram_MH = true,
-                    ValidFunds = context.FundingSources.Where(x => new string[] { "2","5"}.Contains(x.FundingSourceCode)).ToList()
+                    ValidProgram_MH=true,
+                    ValidFunds = context.FundingSources.Where(x => new string[] { "2", "5" }.Contains(x.FundingSourceCode)).ToList()
                 },
                 new ExpenditureOcaCode
                 {
@@ -599,26 +604,28 @@ namespace PAM2FASAMS.Migrations
                         "01","02","04","05","06","07","08","10","11","12","14","15","18","19","20","21","22","25","26","28",
                         "29","30","36","37","38","39","40","44","46"
                     }.Contains(x.CoveredServiceCode)).ToList(),
-                    ValidProgram_MH = true,
+                    ValidProgram_MH=true,
                     ValidFunds = context.FundingSources.Where(x => new string[] { "2", "5" }.Contains(x.FundingSourceCode)).ToList()
                 }
-                );
+            };
+            context.ExpenditureOcaCodes.AddRange(expenditureOcaCodes);
             #endregion
             #region ExpenditureCodeModifiers Seed
-            context.ExpenditureCodeModifiers.AddOrUpdate(x => x.Code,
-                new ExpenditureCodeModifier { Code="BD", Description = "Children Non-Residential Services", ExpenditureCode="MHC09"},
+            List<ExpenditureCodeModifier> expenditureCodeModifiers = new List<ExpenditureCodeModifier> {
+                new ExpenditureCodeModifier { Code = "BD", Description = "Children Non-Residential Services", ExpenditureCode = "MHC09" },
                 new ExpenditureCodeModifier { Code = "BC", Description = "Children Mental Health 24hr Residential Services", ExpenditureCode = "MHC01" },
                 new ExpenditureCodeModifier { Code = "BE", Description = "Children Crisis Services", ExpenditureCode = "MHC18" },
                 new ExpenditureCodeModifier { Code = "BF", Description = "Children Prevention Services", ExpenditureCode = "MHC25" },
                 new ExpenditureCodeModifier { Code = "BH", Description = "Residential Treatment for Emotionally Disturbed Children/Youth", ExpenditureCode = "MHC71" },
-                new ExpenditureCodeModifier { Code = "BI", Description = "Title XXI Children’s Health Insurance Program (Behavioral Health Network)", ExpenditureCode = "MHCBN" },
+                new ExpenditureCodeModifier { Code = "BI", Description = "Title XXI Childrenâ€™s Health Insurance Program (Behavioral Health Network)", ExpenditureCode = "MHCBN" },
                 new ExpenditureCodeModifier { Code = "BJ", Description = "Miami Wrap Around Grant", ExpenditureCode = "MHCMD" },
                 new ExpenditureCodeModifier { Code = "BK", Description = "FACES Miami", ExpenditureCode = "MHCFA" },
                 new ExpenditureCodeModifier { Code = "DB", Description = "Child At Risk Emotionally Disturbed", ExpenditureCode = "MHC77" },
                 new ExpenditureCodeModifier { Code = "DU", Description = "Specialized Treatment, Education and Prevention Services (STEPS)", ExpenditureCode = "MH050" },
                 new ExpenditureCodeModifier { Code = "EH", Description = "MH For Profit Contracting", ExpenditureCode = "MHSFP" },
                 new ExpenditureCodeModifier { Code = "EJ", Description = "MH System of Care", ExpenditureCode = "MHSOC" }
-                );
+            };
+            context.ExpenditureCodeModifiers.AddRange(expenditureCodeModifiers);
             #endregion
 
             context.SaveChanges();
